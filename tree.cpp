@@ -4,7 +4,31 @@
 
 using namespace vcl;
 
+mesh create_surfboard(float length, float width, float height) {
+    mesh surfboard;
+    surfboard.position.resize(9);
 
+    surfboard.position[0] = { 0,length / 2,height/2 };
+    surfboard.position[1] = { 3/8 * width ,length / 4,height/4 };
+    surfboard.position[2] = { -3 / 8 * width ,length / 4,height/4 };
+    surfboard.position[3] = { width/2 ,0,0 };
+    surfboard.position[4] = { -width / 2 ,0,0 };
+    surfboard.position[5] = { 3 / 8 * width ,-length / 4,0};
+    surfboard.position[6] = { -3 / 8 * width ,-length / 4,0};
+    surfboard.position[7] = { width/8,-length / 2,0 };
+    surfboard.position[8] = { -width / 8,-length / 2,0 };
+
+    surfboard.connectivity.push_back({ 0,1,2 });
+    surfboard.connectivity.push_back({ 1,3,2 });
+    surfboard.connectivity.push_back({ 3,4,2 });
+    surfboard.connectivity.push_back({ 3,5,4 });
+    surfboard.connectivity.push_back({ 5,6,4 });
+    surfboard.connectivity.push_back({ 5,7,6 });
+    surfboard.connectivity.push_back({ 7,8,6 });
+
+    surfboard.fill_empty_field();
+    return surfboard;
+}
 mesh create_tree_trunk_cylinder(float radius, float height)
 {
     const unsigned int N = 100;

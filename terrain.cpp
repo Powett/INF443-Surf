@@ -5,7 +5,11 @@
 
 using namespace vcl;
 
+vec3 uvToVec(float u, float v) {
+    return { 20 * (u - 0.5f),20 * (v - 0.5f),0 };
+}
 
+ 
 // Evaluate 3D position of the terrain for any (u,v) \in [0,1]
 vec3 evaluate_terrain(float u, float v, float t)
 {
@@ -98,37 +102,3 @@ mesh create_terrain(bool bruit, float t)
     return terrain;
 }
 
-
-std::vector<vec3> generate_positions_on_terrain(int N, float width, std::vector<float> scales) {
-    std::vector<vec3> positions = {};
-    float sc=1.f;
-    int attempts = 0;
-    for (unsigned int i = 0; i < N; ++i) {
-        if (!scales.empty()) {sc  = scales[i]; }
-        vec3 u = evaluate_terrain_bruit(rand_interval(0, 1), rand_interval(0, 1),0);
-        u.z -= 0.01f*sc;
-        int distance = 0.f;
-        attempts = 0;
-        while (distance < 2*width*sc && attempts<5) {
-            u = evaluate_terrain_bruit(rand_interval(0, 1), rand_interval(0, 1),0);
-            distance = 10.f;
-            for (vec3 v : positions) {
-                distance = std::min(float(distance), norm(v - u));
-            }
-            attempts++;
-        }
-        positions.push_back(u);
-    }
-    return positions;
-}
-std::vector<vec3> generate_positions_on_terrain(int N) {
-    return generate_positions_on_terrain(N, 0.5f, {});
-}
-
-std::vector<float> generate_scales(int N) {
-    std::vector<float> scales = {};
-    for (unsigned int i = 0; i < N; ++i) {
-        scales.push_back(rand_interval(0.5f, 2.f));
-    }
-    return scales;
-}

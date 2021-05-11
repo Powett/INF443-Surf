@@ -34,29 +34,21 @@ mesh_drawable sphere_current;    // sphere used to display the interpolated valu
 mesh_drawable sphere_keyframe;   // sphere used to display the key positions
 curve_drawable polygon_keyframe; // Display the segment between key positions
 curve_drawable rope;
-trajectory_drawable trajectory;  // Temporary storage and display of the interpolated trajectory
+
+mesh_drawable board;
 
 hierarchy_mesh_drawable hierarchy;
 mesh_drawable terrain;
 mesh_drawable vagues;
 struct rope* rp;
 
+float bigRadius = 10.0f;
+
 float gScale = 0.7f;
-float carlength = 3.0f*gScale;
-float carwidth = 1.5f*gScale;
-float carheight = 1.2f*gScale;
-float wheel_radius = 0.45f*gScale;
+float bodyHeight = 1.0f * gScale;
+float bodyWidth = 0.5f * gScale;
 
-vec3 faxisShift = vec3(carlength / 3, 0, -wheel_radius *2/ 3);
-vec3 raxisShift = vec3(-carlength / 3, 0, -wheel_radius *2/ 3);
-vec3 rightWheelAxisShift = vec3(0, -wheel_radius / 2 - carwidth / 2, 0);
-vec3 FRWheelShift = faxisShift + rightWheelAxisShift;
-vec3 FRWheelTouch = FRWheelShift + vec3(0, 0, wheel_radius*3/2);
-vec3 FMWheelTouch = faxisShift - vec3(0, 0, wheel_radius*3/2);
-float centerToTouch=-FMWheelTouch.z;
-
-float bigRadius = 8.0f;
-float x, y,z;
+float x, y, z;
 
 float deltaT;
 
@@ -73,31 +65,31 @@ int main(int, char* argv[])
 	imgui_init(window);
 	glfwSetCursorPosCallback(window, mouse_move_callback);
 	glfwSetWindowSizeCallback(window, window_size_callback);
-	
-	std::cout<<"Initialize data ..."<<std::endl;
+
+	std::cout << "Initialize data ..." << std::endl;
 	initialize_data();
 
-	std::cout<<"Start animation loop ..."<<std::endl;
+	std::cout << "Start animation loop ..." << std::endl;
 	user.fps_record.start();
 	glEnable(GL_DEPTH_TEST);
 	while (!glfwWindowShouldClose(window))
 	{
 		scene.light = scene.camera.position();
 		user.fps_record.update();
-		
+
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		imgui_create_frame();
-		if(user.fps_record.event) {
-			std::string const title = "VCL Display - "+str(user.fps_record.fps)+" fps";
+		if (user.fps_record.event) {
+			std::string const title = "VCL Display - " + str(user.fps_record.fps) + " fps";
 			glfwSetWindowTitle(window, title.c_str());
 		}
 
-		ImGui::Begin("GUI",NULL,ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Begin("GUI", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 		user.cursor_on_gui = ImGui::IsAnyWindowFocused();
 
-		if(user.gui.display_frame) draw(user.global_frame, scene);
+		if (user.gui.display_frame) draw(user.global_frame, scene);
 
 		display_interface();
 		display_frame();
@@ -129,14 +121,14 @@ void initialize_data()
 	user.global_frame = mesh_drawable(mesh_primitive_frame());
 	user.gui.display_frame = false;
 	scene.camera.distance_to_center = 2.5f;
-	scene.camera.look_at({-0.5f,10.0f,1}, {0,0,0}, {0,0,1});
-	
+	scene.camera.look_at({ -0.5f,10.0f,1 }, { 0,0,0 }, { 0,0,1 });
+
 	// Definition of the initial data
 	//--------------------------------------//
 	// Key positions
 	key_positions = { {0,10,5}, {5,10,5},{-10,1,5}, {-5,-10,5}, {0,10,5}, {5,10,5} };
 	// Key times
-	key_times = { 0.0f, 2.0f, 2.5f, 3.0f, 3.5f, 4.1f};
+	key_times = { 0.0f, 2.0f, 2.5f, 3.0f, 3.5f, 4.1f };
 	float key_times_max = key_times[key_times.size() - 1];
 
 	for (int i = 0; i < key_positions.size(); i++) {
@@ -152,7 +144,7 @@ void initialize_data()
 	timer.t_min = key_times[0];    // Start the timer at the first time of the keyframe
 	timer.t_max = key_times[N - 2];  // Ends the timer at the last time of the keyframe
 	timer.t = timer.t_min;
-	deltaT= timer.t_max - timer.t_min;
+	deltaT = timer.t_max - timer.t_min;
 
 
 	// Initialize drawable structures
@@ -165,84 +157,61 @@ void initialize_data()
 	polygon_keyframe.color = { 0,0,0 };
 	rp = new struct rope(10, 10.0f, 1.0f, 0.1f, { 0,0,0 }, { 5,5,0 });
 	rope = curve_drawable(rp->n_positions);
+
+	board = mesh_drawable(create_surfboard(3.0f*bodyHeight, 3.0f*bodyWidth, 0.5f*bodyWidth));
+
 	//Main body
-	mesh mbody = ellipsoid_with_texture({ carheight / 2,carwidth / 2,carlength / 2, }, { 0,0,0 });
-	mesh mspoiler;
-	mspoiler.push_back(mesh_primitive_quadrangle({ -carlength *1 / 10,-carwidth / 5,0 }, { -carlength *4/ 10,-carwidth / 5,0 }, { -carlength *6/10,-carwidth / 5,carheight*20.0f/30.0f}, { -carlength *5 / 10,-carwidth / 5,carheight*17.0f/30.0f }));
-	mspoiler.push_back(mesh_primitive_quadrangle({ -carlength * 1 / 10,carwidth / 5,0 }, { -carlength * 4 / 10,carwidth / 5,0 }, { -carlength * 6 / 10,carwidth / 5,carheight * 20.0f / 30.0f }, { -carlength * 5 / 10,carwidth / 5,carheight * 17.0f / 30.0f }));
-	mspoiler.push_back(mesh_primitive_quadrangle({ -carlength * 6 / 10,-carwidth*2/3,carheight * 20.0f / 30.0f }, { -carlength * 6 / 10,carwidth *2/ 3,carheight * 20.0f / 30.0f }, { -carlength * 5 / 10,carwidth * 1 / 2,carheight * 17.0f / 30.0f }, { -carlength * 5 / 10, -carwidth * 1 / 2, carheight * 17.0f / 30.0f }));
-	mesh_drawable cabin = mesh_drawable(mesh_primitive_ellipsoid({ carlength / 4, carwidth / 4, carheight / 3 }));
-	mesh_drawable spoiler = mesh_drawable(mspoiler);
-	spoiler.shading.color = { 0.9f,0,0 };
-	spoiler.shading.phong.specular = 0.1f;
+	mesh_drawable body = mesh_drawable(mesh_primitive_ellipsoid({ bodyWidth,bodyWidth,bodyHeight }));
+	mesh_drawable head = mesh_drawable(mesh_primitive_sphere(bodyWidth));
+	head.transform.rotate = rotation({ 0,0,1 }, pi / 2);
+	mesh_drawable knee = mesh_drawable(mesh_primitive_sphere(0.5 * bodyWidth));
+	mesh_drawable shoulder = mesh_drawable(mesh_primitive_sphere(0.7 * bodyWidth));
+	mesh_drawable hip = mesh_drawable(mesh_primitive_sphere(0.6 * bodyWidth));
+	mesh_drawable elbow = mesh_drawable(mesh_primitive_sphere(0.4 * bodyWidth));
+	mesh_drawable thigh = mesh_drawable(mesh_primitive_ellipsoid({ 0.7f*bodyWidth,0.7f*bodyWidth,0.6f*bodyHeight }));
+	mesh_drawable leg = mesh_drawable(mesh_primitive_ellipsoid({ 0.6f*bodyWidth,0.6f*bodyWidth,0.6f*bodyHeight }));
+	mesh_drawable arm = mesh_drawable(mesh_primitive_ellipsoid({ 0.5f*bodyWidth,0.5f*bodyWidth,0.5f*bodyHeight }));
+	mesh_drawable forearm = mesh_drawable(mesh_primitive_ellipsoid({ 0.4f*bodyWidth,0.4f*bodyWidth,0.4f*bodyHeight }));
+	mesh_drawable foot = mesh_drawable(mesh_primitive_ellipsoid({ 0.4f * bodyWidth,0.4f * bodyWidth,0.4f * bodyHeight }));
 
-	cabin.shading.color = { 116.0f / 255.0f, 208.0f / 255.0f, 241.0f / 255.0f };
-	cabin.shading.phong.specular = 5.0f;
-	cabin.shading.phong.specular_exponent = 5.0f;
-	mesh_drawable body = mesh_drawable(mbody);
-	body.shading.color = { 0.5f,0.5f,0.5f };
-	body.shading.phong.specular = 0.1f;
-	body.transform.rotate = rotation({ 0,1,0 }, pi / 2);
-
-	mesh_drawable wheel = mesh_drawable(tore_with_texture(wheel_radius, wheel_radius / 2, { 0,0,0 }));
-	wheel.transform.rotate = vcl::rotation({ 1,0,0 }, pi/2);
-	wheel.shading.phong.specular = 0.0f;
-	wheel.shading.color = { 0.5f,0.5f,0.5f };
-	mesh_drawable rim = mesh_drawable(cylinder_with_texture(0.9f*wheel_radius, { 0,0,0 }, 0.9f*wheel_radius));
-	rim.transform.rotate = vcl::rotation({ 1,0,0 }, pi / 2);
-
-	//mesh_drawable rimDisc = mesh_drawable(disc_with_texture(0.9f * wheel_radius, { 0,0,0 }));
-	//rimDisc.transform.rotate = vcl::rotation({ 1,0,0 }, pi / 2);
-
-	mesh_drawable axis = mesh_drawable(mesh_primitive_cylinder(0.4f * wheel_radius, { 0,-carwidth/2,0 }, { 0,carwidth/2,0 }, 20, 40, true));
-
-	wheel.texture = opengl_texture_to_gpu(image_load_png("../Assets/rubber.png"),
+	arm.transform.rotate = rotation({ 0,1,0 }, pi / 2);
+	forearm.transform.rotate = rotation({ 0,1,0 }, pi / 2);
+	foot.transform.rotate = rotation({ 1,0,0 }, pi / 2);
+	head.texture = opengl_texture_to_gpu(image_load_png("../Assets/face.png"),
 		GL_REPEAT,
 		GL_MIRRORED_REPEAT);
-	rim.texture = opengl_texture_to_gpu(image_load_png("../assets/rim.png"),
-		GL_MIRRORED_REPEAT,
-		GL_MIRRORED_REPEAT);
-	body.texture= opengl_texture_to_gpu(image_load_png("../assets/rivets.png"),
-		GL_MIRRORED_REPEAT,
-		GL_MIRRORED_REPEAT);
-	terrain.texture=opengl_texture_to_gpu(image_load_png("../assets/texture_grass.png"),
-		GL_MIRRORED_REPEAT,
-		GL_MIRRORED_REPEAT);
-	
+
+	hierarchy.add(body, "Body");
+	hierarchy.add(head, "Head", "Body", { 0,0,1.4f*bodyHeight });
+
+	hierarchy.add(shoulder, "RShoulder", "Body", { -bodyWidth,0,0.6f*bodyHeight });
+	hierarchy.add(shoulder, "LShoulder", "Body", { bodyWidth,0,0.6f*bodyHeight });
+	hierarchy.add(arm, "RArm", "RShoulder", { -0.6f * bodyHeight,0,0 });
+	hierarchy.add(arm, "LArm", "LShoulder", { 0.6f * bodyHeight,0, 0});
+	hierarchy.add(elbow, "RElbow", "RArm", { -0.5f * bodyHeight,0, 0});
+	hierarchy.add(elbow, "LElbow", "LArm", { 0.5f * bodyHeight,0, 0});
+	hierarchy.add(forearm, "RForearm", "RElbow", { -0.4f * bodyHeight,0,0 });
+	hierarchy.add(forearm, "LForearm", "LElbow", { 0.4f * bodyHeight,0, 0});
+
+
+	hierarchy.add(hip, "RHip", "Body", { -0.8f*bodyWidth,0,-0.7f * bodyHeight });
+	hierarchy.add(hip, "LHip", "Body", { 0.8f*bodyWidth,0,-0.7f * bodyHeight });
+	hierarchy.add(thigh, "RThigh", "RHip", { 0,0,-0.6f*bodyHeight });
+	hierarchy.add(thigh, "LThigh", "LHip", { 0,0,-0.6f*bodyHeight });
+	hierarchy.add(knee, "RKnee", "RThigh", { 0,0,-0.6f * bodyHeight });
+	hierarchy.add(knee, "LKnee", "LThigh", { 0,0,-0.6f * bodyHeight });
+	hierarchy.add(leg, "LLeg", "LKnee", { 0,0,-0.6f * bodyHeight });
+	hierarchy.add(leg, "RLeg", "RKnee", { 0,0,-0.6f * bodyHeight });
+	hierarchy.add(foot, "RFoot", "RLeg", {0, 0.2f*bodyHeight,-0.5 * bodyHeight });
+	hierarchy.add(foot, "LFoot", "LLeg", {0, 0.2f*bodyHeight,-0.5 * bodyHeight });
+
 
 	// Build the hierarchy:
 	// ------------------------------------------- //
-    // Syntax to add element
-    //   hierarchy.add(visual_element, element_name, parent_name, (opt)[translation, rotation])
+	// Syntax to add element
+	//   hierarchy.add(visual_element, element_name, parent_name, (opt)[translation, rotation])
 
 	// The root of the hierarchy is the body
-	hierarchy.add(mesh_drawable(), "laceBody");
-	hierarchy.add(mesh_drawable(), "pitchBody", "laceBody");
-	hierarchy.add(body, "rollBody", "pitchBody");
-	hierarchy.add(spoiler, "Spoiler","rollBody");
-
-	cabin.transform.translate = { carlength / 5,0,carheight / 4 };
-	cabin.transform.rotate= rotation({ 0,1,0 }, pi / 10);
-
-	hierarchy.add(cabin, "Cabin", "rollBody");
-	hierarchy.add(axis, "F_axis", "rollBody", faxisShift);
-	hierarchy.add(axis, "R_axis", "rollBody", raxisShift);
-
-	hierarchy.add(rim, "FR_rim", "F_axis", rightWheelAxisShift);
-	hierarchy.add(rim, "FL_rim", "F_axis", -rightWheelAxisShift);
-	hierarchy.add(rim, "RR_rim", "R_axis", rightWheelAxisShift);
-	hierarchy.add(rim, "RL_rim", "R_axis", -rightWheelAxisShift);
-
-	hierarchy.add(mesh_drawable(), "FR_touch", "F_axis", rightWheelAxisShift - vec3(0, 0, 1.5f * wheel_radius));
-	hierarchy.add(mesh_drawable(), "RR_touch", "R_axis", rightWheelAxisShift- vec3(0, 0, 1.5f * wheel_radius));
-	hierarchy.add(mesh_drawable(), "FL_touch", "F_axis", -rightWheelAxisShift- vec3(0, 0, 1.5f * wheel_radius));
-	hierarchy.add(mesh_drawable(), "RL_touch", "R_axis", -rightWheelAxisShift- vec3(0, 0, 1.5f * wheel_radius));
-
-	wheel.transform.rotate = vcl::rotation({ 1,0,0 }, pi / 2);
-	hierarchy.add(wheel, "FR_wheel", "FR_rim");
-	hierarchy.add(wheel, "RR_wheel", "RR_rim");
-	hierarchy.add(wheel, "FL_wheel", "FL_rim");
-	hierarchy.add(wheel, "RL_wheel", "RL_rim");
 
 }
 
@@ -250,24 +219,21 @@ void initialize_data()
 
 void display_frame()
 {
-	// TRAJECTORY PART
-
+	/***
 	// Sanity check
 	assert_vcl(key_times.size() == key_positions.size(), "key_time and key_positions should have the same size");
 
 	// Update the current time
-	timer.update();
-	float const t = timer.t;
 	terrain = mesh_drawable(create_terrain(false, t));
 	terrain.shading.phong.specular = 0.2f;
 	terrain.shading.color = { 0,0,0.8f };
 
+	
 	vagues = mesh_drawable(create_terrain(true, t-dt));
 	vagues.shading.phong.specular = 0.0f;
 	vagues.shading.color = { 1,1,1 };
+	
 
-	if (t < timer.t_min + 0.1f) // clear trajectory when the timer restart
-		trajectory.clear();
 	//update_hfixed_rope(rp, t);
 	// Display the key positions
 	if (user.gui.display_keyposition)
@@ -281,84 +247,38 @@ void display_frame()
 	vec3 const p = interpolation(t, key_positions, key_times);
 	vec3 const p_tdt = interpolation(t + dt, key_positions, key_times);
 	vec3 const deltaP = p_tdt - p;
-	
-	/***
-	// Display the interpolated position
-	sphere_current.transform.translate = p;
-	draw(sphere_current, scene);
 	***/
 	
-
 	/** *************************************************************  **/
-    /** Compute the (animated) transformations applied to the elements **/
-    /** *************************************************************  **/
+	/** Compute the (animated) transformations applied to the elements **/
+	/** *************************************************************  **/
 
-	// update the global coordinates
-	x =bigRadius *std::sin(2 * pi * t / deltaT);
-	y =bigRadius *std::cos(2 * pi * t / deltaT);
+//	hierarchy["Body"].transform.translate = { p.x,p.y,0 };
 
-	hierarchy["laceBody"].transform.translate = { p.x,p.y,0 };
-	hierarchy["laceBody"].transform.rotate = rotation({ 0,0,1 }, std::atan2(deltaP.y, deltaP.x));
-	hierarchy["pitchBody"].transform.rotate = rotation({ 0,1,0 },0);
+	timer.update();
+	float const t = timer.t;
 
-	hierarchy["rollBody"].transform.rotate = rotation({ 1,0,0 },0);
+	hierarchy["Body"].transform.rotate = rotation({ 0,1,0 }, pi / 10 * (0.5f+ sin(2 * pi * t)));
+	hierarchy["Head"].transform.rotate=rotation({1,0,0}, pi / 10 * sin(2 * pi * t));
 
+	hierarchy["RHip"].transform.rotate = rotation({ 1,0,0 }, pi/4 *(1+sin(2 * pi * t)));
+	hierarchy["RKnee"].transform.rotate = rotation({ 1,0,0 }, - pi / 2 * (1 + sin(2 * pi * t)));
+	hierarchy["LHip"].transform.rotate = rotation({ 1,0,0 }, pi / 4 * (1 + sin(2 * pi * (t-0.5f))));
+	hierarchy["LKnee"].transform.rotate = rotation({ 1,0,0 }, -pi / 2 * (1 + sin(2 * pi * (t-0.5f))));
 
-	hierarchy["R_axis"].transform.rotate = rotation({ 1,0,0 }, 0);
-	hierarchy["F_axis"].transform.rotate = rotation({ 1,0,0 }, 0);
-
+	hierarchy["LShoulder"].transform.rotate = rotation({ 0,0,1 }, pi / 4 * (1 + sin(2 * pi * t)));
+	hierarchy["LElbow"].transform.rotate = rotation({ 0,0,1 }, pi / 4 * (1 + sin(2 * pi * t)));
+	hierarchy["RShoulder"].transform.rotate = rotation({ 0,0,1 }, -pi / 4 * (1 + sin(2 * pi * (t - 0.5f))));
+	hierarchy["RElbow"].transform.rotate = rotation({ 0,0,1 }, -pi / 4 * (1 + sin(2 * pi * (t - 0.5f))));
 	hierarchy.update_local_to_global_coordinates();
-
-
-	vec3 FR_wheel_pos = evaluate_terrain_bruit(hierarchy["FR_touch"].global_transform.translate, t);
-	vec3 FL_wheel_pos = evaluate_terrain_bruit(hierarchy["FL_touch"].global_transform.translate, t);
-	vec3 RR_wheel_pos = evaluate_terrain_bruit(hierarchy["RR_touch"].global_transform.translate, t);
-	vec3 RL_wheel_pos = evaluate_terrain_bruit(hierarchy["RL_touch"].global_transform.translate, t);
-
-	vec3 F_wheels_pos = (FR_wheel_pos + FL_wheel_pos )/ 2;
-	vec3 R_wheels_pos = (RR_wheel_pos + RL_wheel_pos) / 2;
-
-	vec3 Ri_wheels_pos = (FR_wheel_pos + RR_wheel_pos) / 2;
-	vec3 Le_wheels_pos = (FL_wheel_pos + RL_wheel_pos) / 2;
-
-	z = 1.0f*centerToTouch + (F_wheels_pos+R_wheels_pos).z/2;
-	float deltaZFaxis = FR_wheel_pos.z - FL_wheel_pos.z;
-	float deltaZRaxis = RR_wheel_pos.z - RL_wheel_pos.z;
-	float FaxisRollAngle = std::asin(double(deltaZFaxis / carwidth));
-	float RaxisRollAngle = std::asin(double(deltaZRaxis / carwidth));
-	double bodyRollAngle = (FaxisRollAngle + RaxisRollAngle) / 2;
-	double bodyPitchAngle = std::asin(double((F_wheels_pos - R_wheels_pos).z / carlength));
-	
-
-	hierarchy["pitchBody"].transform.translate = vec3(0, 0, z);
-	hierarchy["pitchBody"].transform.rotate = rotation({ 0,1,0 }, -bodyPitchAngle);
-
-	hierarchy["rollBody"].transform.rotate = rotation({ 1,0,0 }, -bodyRollAngle);
-
-
-	hierarchy["R_axis"].transform.rotate = rotation({ 1,0,0 }, (bodyRollAngle-RaxisRollAngle));
-	hierarchy["F_axis"].transform.rotate = rotation({ 1,0,0 }, (bodyRollAngle- FaxisRollAngle));
-	
-	
-	hierarchy["FR_rim"].transform.rotate = rotation({ 0,1,0 }, 2 * pi * bigRadius / wheel_radius * t / deltaT);
-	hierarchy["FL_rim"].transform.rotate = rotation({ 0,1,0 }, 2 * pi * bigRadius / wheel_radius * t / deltaT);
-	hierarchy["RR_rim"].transform.rotate = rotation({ 0,1,0 }, 2 * pi * bigRadius / wheel_radius * t / deltaT);
-	hierarchy["RL_rim"].transform.rotate = rotation({ 0,1,0 }, 2 * pi * bigRadius / wheel_radius * t / deltaT);
-	
-	//hierarchy["laceBody"].transform.translate = { -0.5f,10.0f,1 };
-	hierarchy.update_local_to_global_coordinates();
-	
-	// Display the trajectory
-	trajectory.visual.color = { 1,0,0 };
-	trajectory.add(hierarchy["pitchBody"].global_transform.translate, t);
-	draw(trajectory, scene);
 
 	// display the hierarchy
 	draw(hierarchy, scene);
-	
+	draw(board, scene);
+
 	if (user.gui.display_surface) {
-		draw(terrain, scene);
-		draw(vagues, scene);
+		//draw(terrain, scene);
+		//draw(vagues, scene);
 	}
 	if (user.gui.display_wireframe) {
 		draw_wireframe(hierarchy, scene);
@@ -373,22 +293,16 @@ void display_interface()
 	ImGui::Checkbox("Frame", &user.gui.display_frame);
 	ImGui::Checkbox("Display key positions", &user.gui.display_keyposition);
 	ImGui::Checkbox("Display polygon", &user.gui.display_polygon);
-	ImGui::Checkbox("Display trajectory", &user.gui.display_trajectory);
-	bool new_size = ImGui::SliderInt("Trajectory size", &user.gui.trajectory_storage, 2, 500);
 	ImGui::Checkbox("Surface", &user.gui.display_surface);
 	ImGui::Checkbox("Wireframe", &user.gui.display_wireframe);
-	if (new_size) {
-		trajectory.clear();
-		trajectory = trajectory_drawable(user.gui.trajectory_storage);
-	}
 }
 
 
-void window_size_callback(GLFWwindow* , int width, int height)
+void window_size_callback(GLFWwindow*, int width, int height)
 {
 	glViewport(0, 0, width, height);
 	float const aspect = width / static_cast<float>(height);
-	float const fov = 50.0f * pi /180.0f;
+	float const fov = 50.0f * pi / 180.0f;
 	float const z_min = 0.1f;
 	float const z_max = 100.0f;
 	scene.projection = projection_perspective(fov, aspect, z_min, z_max);
