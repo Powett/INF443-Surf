@@ -3,7 +3,7 @@
 #include "scene_helper.hpp"
 #include "model_textures.hpp"
 #include "terrain.hpp"
-#include "tree.hpp"
+#include "meshes.hpp"
 #include "physics.hpp"
 #include <iostream>
 
@@ -158,16 +158,20 @@ void initialize_data()
 	rp = new struct rope(10, 10.0f, 1.0f, 0.1f, { 0,0,0 }, { 5,5,0 });
 	rope = curve_drawable(rp->n_positions);
 
-	board = mesh_drawable(create_surfboard(3.0f*bodyHeight, 3.0f*bodyWidth, 0.5f*bodyWidth));
+
+	board = mesh_drawable(create_surfboard(7.0f * bodyHeight, 3.0f * bodyWidth, 0.5f * bodyWidth));
+	//board.transform.translate = { 0,0,-bodyHeight * 3 };
+	board.transform.rotate = rotation({ 0,0,1 }, pi / 2);
 
 	//Main body
 	mesh_drawable body = mesh_drawable(mesh_primitive_ellipsoid({ bodyWidth,bodyWidth,bodyHeight }));
 	mesh_drawable head = mesh_drawable(mesh_primitive_sphere(bodyWidth));
 	head.transform.rotate = rotation({ 0,0,1 }, pi / 2);
 	mesh_drawable knee = mesh_drawable(mesh_primitive_sphere(0.5 * bodyWidth));
-	mesh_drawable shoulder = mesh_drawable(mesh_primitive_sphere(0.7 * bodyWidth));
-	mesh_drawable hip = mesh_drawable(mesh_primitive_sphere(0.6 * bodyWidth));
-	mesh_drawable elbow = mesh_drawable(mesh_primitive_sphere(0.4 * bodyWidth));
+	mesh_drawable shoulder = mesh_drawable(mesh_primitive_sphere(0.7f * bodyWidth));
+	mesh_drawable hip = mesh_drawable(mesh_primitive_sphere(0.6f * bodyWidth));
+	mesh_drawable ankle = mesh_drawable(mesh_primitive_sphere(0.4f * bodyWidth));
+	mesh_drawable elbow = mesh_drawable(mesh_primitive_sphere(0.4f * bodyWidth));
 	mesh_drawable thigh = mesh_drawable(mesh_primitive_ellipsoid({ 0.7f*bodyWidth,0.7f*bodyWidth,0.6f*bodyHeight }));
 	mesh_drawable leg = mesh_drawable(mesh_primitive_ellipsoid({ 0.6f*bodyWidth,0.6f*bodyWidth,0.6f*bodyHeight }));
 	mesh_drawable arm = mesh_drawable(mesh_primitive_ellipsoid({ 0.5f*bodyWidth,0.5f*bodyWidth,0.5f*bodyHeight }));
@@ -177,33 +181,36 @@ void initialize_data()
 	arm.transform.rotate = rotation({ 0,1,0 }, pi / 2);
 	forearm.transform.rotate = rotation({ 0,1,0 }, pi / 2);
 	foot.transform.rotate = rotation({ 1,0,0 }, pi / 2);
-	head.texture = opengl_texture_to_gpu(image_load_png("../Assets/face.png"),
+	head.texture = opengl_texture_to_gpu(image_load_png("../Assets/test.png"),
 		GL_REPEAT,
 		GL_MIRRORED_REPEAT);
 
 	hierarchy.add(body, "Body");
 	hierarchy.add(head, "Head", "Body", { 0,0,1.4f*bodyHeight });
 
-	hierarchy.add(shoulder, "RShoulder", "Body", { -bodyWidth,0,0.6f*bodyHeight });
-	hierarchy.add(shoulder, "LShoulder", "Body", { bodyWidth,0,0.6f*bodyHeight });
-	hierarchy.add(arm, "RArm", "RShoulder", { -0.6f * bodyHeight,0,0 });
-	hierarchy.add(arm, "LArm", "LShoulder", { 0.6f * bodyHeight,0, 0});
-	hierarchy.add(elbow, "RElbow", "RArm", { -0.5f * bodyHeight,0, 0});
-	hierarchy.add(elbow, "LElbow", "LArm", { 0.5f * bodyHeight,0, 0});
-	hierarchy.add(forearm, "RForearm", "RElbow", { -0.4f * bodyHeight,0,0 });
-	hierarchy.add(forearm, "LForearm", "LElbow", { 0.4f * bodyHeight,0, 0});
+	hierarchy.add(shoulder, "RShoulder", "Body", { bodyWidth,0,0.6f*bodyHeight });
+	hierarchy.add(shoulder, "LShoulder", "Body", { -bodyWidth,0,0.6f*bodyHeight });
+	hierarchy.add(arm, "RArm", "RShoulder", { 0.6f * bodyHeight,0,0 });
+	hierarchy.add(arm, "LArm", "LShoulder", { -0.6f * bodyHeight,0, 0});
+	hierarchy.add(elbow, "RElbow", "RArm", { 0.5f * bodyHeight,0, 0});
+	hierarchy.add(elbow, "LElbow", "LArm", { -0.5f * bodyHeight,0, 0});
+	hierarchy.add(forearm, "RForearm", "RElbow", { 0.4f * bodyHeight,0,0 });
+	hierarchy.add(forearm, "LForearm", "LElbow", { -0.4f * bodyHeight,0, 0});
 
 
-	hierarchy.add(hip, "RHip", "Body", { -0.8f*bodyWidth,0,-0.7f * bodyHeight });
-	hierarchy.add(hip, "LHip", "Body", { 0.8f*bodyWidth,0,-0.7f * bodyHeight });
+	hierarchy.add(hip, "RHip", "Body", { 0.8f*bodyWidth,0,-0.7f * bodyHeight });
+	hierarchy.add(hip, "LHip", "Body", { -0.8f*bodyWidth,0,-0.7f * bodyHeight });
 	hierarchy.add(thigh, "RThigh", "RHip", { 0,0,-0.6f*bodyHeight });
 	hierarchy.add(thigh, "LThigh", "LHip", { 0,0,-0.6f*bodyHeight });
 	hierarchy.add(knee, "RKnee", "RThigh", { 0,0,-0.6f * bodyHeight });
 	hierarchy.add(knee, "LKnee", "LThigh", { 0,0,-0.6f * bodyHeight });
 	hierarchy.add(leg, "LLeg", "LKnee", { 0,0,-0.6f * bodyHeight });
 	hierarchy.add(leg, "RLeg", "RKnee", { 0,0,-0.6f * bodyHeight });
-	hierarchy.add(foot, "RFoot", "RLeg", {0, 0.2f*bodyHeight,-0.5 * bodyHeight });
-	hierarchy.add(foot, "LFoot", "LLeg", {0, 0.2f*bodyHeight,-0.5 * bodyHeight });
+	hierarchy.add(ankle, "RAnkle", "RLeg", { 0, 0,-0.6 * bodyHeight });
+	hierarchy.add(ankle, "LAnkle", "LLeg", { 0, 0,-0.6 * bodyHeight });
+	hierarchy.add(foot, "RFoot", "RAnkle", {0, 0.3f*bodyHeight,0});
+	hierarchy.add(foot, "LFoot", "LAnkle", {0, 0.3f*bodyHeight,0});
+	hierarchy.add(board, "Board", "LFoot", { 0.8f * bodyWidth,0,-0.1f*bodyWidth});
 
 
 	// Build the hierarchy:
@@ -258,23 +265,29 @@ void display_frame()
 	timer.update();
 	float const t = timer.t;
 
-	hierarchy["Body"].transform.rotate = rotation({ 0,1,0 }, pi / 10 * (0.5f+ sin(2 * pi * t)));
+	//hierarchy["Body"].transform.rotate = rotation({ 0,1,0 }, pi / 10 * (0.5f+ sin(2 * pi * t)));
 	hierarchy["Head"].transform.rotate=rotation({1,0,0}, pi / 10 * sin(2 * pi * t));
 
-	hierarchy["RHip"].transform.rotate = rotation({ 1,0,0 }, pi/4 *(1+sin(2 * pi * t)));
-	hierarchy["RKnee"].transform.rotate = rotation({ 1,0,0 }, - pi / 2 * (1 + sin(2 * pi * t)));
-	hierarchy["LHip"].transform.rotate = rotation({ 1,0,0 }, pi / 4 * (1 + sin(2 * pi * (t-0.5f))));
-	hierarchy["LKnee"].transform.rotate = rotation({ 1,0,0 }, -pi / 2 * (1 + sin(2 * pi * (t-0.5f))));
+	hierarchy["RHip"].transform.rotate = rotation({ 1,0,0 }, pi/5 *(1+sin(2 * pi * t)));
+	hierarchy["RKnee"].transform.rotate = rotation({ 1,0,0 }, - pi *2.0f/ 5.0f * (1 + sin(2 * pi * t)));
+	hierarchy["LHip"].transform.rotate = rotation({ 1,0,0 }, pi / 5 * (1 + sin(2 * pi * (t-0.5f))));
+	hierarchy["LKnee"].transform.rotate = rotation({ 1,0,0 }, -pi* 2.0f/ 5.0f * (1 + sin(2 * pi * (t-0.5f))));
 
-	hierarchy["LShoulder"].transform.rotate = rotation({ 0,0,1 }, pi / 4 * (1 + sin(2 * pi * t)));
-	hierarchy["LElbow"].transform.rotate = rotation({ 0,0,1 }, pi / 4 * (1 + sin(2 * pi * t)));
-	hierarchy["RShoulder"].transform.rotate = rotation({ 0,0,1 }, -pi / 4 * (1 + sin(2 * pi * (t - 0.5f))));
-	hierarchy["RElbow"].transform.rotate = rotation({ 0,0,1 }, -pi / 4 * (1 + sin(2 * pi * (t - 0.5f))));
+	hierarchy["RAnkle"].transform.rotate = rotation({ 1,0,0 }, pi / 5 * (1 + sin(2 * pi * t)));
+	hierarchy["LAnkle"].transform.rotate = rotation({ 1,0,0 }, pi / 5 * (1 + sin(2 * pi * (t - 0.5f))));
+
+	hierarchy["LShoulder"].transform.rotate = rotation({ 0,1 / sqrt(2),1 / sqrt(2) }, -pi / 4 * (1 + sin(2 * pi * t)));
+	hierarchy["LElbow"].transform.rotate = rotation({ 0,0,1 }, -pi / 4 * (1 + sin(2 * pi * t)));
+	hierarchy["RShoulder"].transform.rotate = rotation({ 0,1 / sqrt(2),1 / sqrt(2) }, pi / 4 * (1 + sin(2 * pi * (t - 0.5f))));
+	hierarchy["RElbow"].transform.rotate = rotation({ 0,0,1 }, pi / 4 * (1 + sin(2 * pi * (t - 0.5f))));
+	hierarchy.update_local_to_global_coordinates();
+	hierarchy["Board"].transform.translate.z = (-hierarchy["LFoot"].global_transform.translate.z - hierarchy["RFoot"].global_transform.translate.z) / 2;
+	hierarchy["Board"].transform.rotate = rotation({ 0,1,0 }, pi-atan2(hierarchy["LFoot"].global_transform.translate.z -hierarchy["RFoot"].global_transform.translate.z, hierarchy["LFoot"].global_transform.translate.x - hierarchy["RFoot"].global_transform.translate.x));
 	hierarchy.update_local_to_global_coordinates();
 
 	// display the hierarchy
 	draw(hierarchy, scene);
-	draw(board, scene);
+
 
 	if (user.gui.display_surface) {
 		//draw(terrain, scene);
@@ -282,7 +295,7 @@ void display_frame()
 	}
 	if (user.gui.display_wireframe) {
 		draw_wireframe(hierarchy, scene);
-		draw_wireframe(terrain, scene);
+		draw_wireframe(board, scene);
 	}
 }
 
