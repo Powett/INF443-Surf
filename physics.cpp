@@ -15,7 +15,7 @@ vec3 spring_force(vec3 const& p_i, vec3 const& p_j, float L_0, float K)
 	return K * ((p_j - p_i) - L_0 * (p_j - p_i) / norm((p_j - p_i)));
 }
 
-void update_free_rope(rope rp, float t) {
+void update_rope(rope rp, float t, bool free) {
 	std::vector<particle_structure* > particules = rp.points;
 	std::vector<vec3> n_positions = rp.n_positions;
 	std::vector<vec3> n_speeds = rp.n_speeds;
@@ -23,7 +23,8 @@ void update_free_rope(rope rp, float t) {
 	float K = rp.K;
 	float L0 = rp.L0;
 	float m = rp.m;
-	for (int i = 1; i < particules.size() - 1; ++i)
+	int const d = free ? 0 : 1;
+	for (int i = d; i < particules.size() - 1; ++i)
 	{
 		particle_structure* it = particules[i];
 		vec3 fh_spring = { 0,0,0 };
@@ -55,6 +56,9 @@ void update_free_rope(rope rp, float t) {
 		it->v = n_speeds[i];
 	}
 }
+
+
+
 /***
 void draw_rope(rope rp){
 	sphere.transform.translate = particules[0]->p;
@@ -73,21 +77,21 @@ for (int i = 0; i < particules.size(); i++) {
 }
 }***/
 
-void update_position(rope rp, float t, particule_structure* surfeur) {
+void update_position(rope rp, float t, particle_structure* surfeur) {
 	float mu = rp.mu;
 	float K = rp.K;
 	float L0 = rp.L0;
 	float m = rp.m;
-	particle_structure* h = rp.points[rp.N]->v;
+	particle_structure* h = rp.points[rp.N - 1];
 	vec3 fh_damping = -mu * (surfeur->v - h->v);
 	vec3 fh_spring = spring_force(surfeur->p, h->p, L0, K);
 	vec3 fd_spring = spring_force(h->p, surfeur->p, L0, K);
 	vec3 fd_damping = -mu * (h->v - surfeur->v);
-	rp.points->v += (fd_spring + fd_damping) * dt / m;
+	h->v += (fd_spring + fd_damping) * dt / m;
 	surfeur->v += (fh_spring + fh_damping) * dt / (10*m);
 	surfeur->p += surfeur->v * dt;
-	update_free_rope(rp, t);
-	float hauteur = evaluate_terrain((surfeur->p.x) / 20 + 0.5f, (surfeur->p.y) / 20 + 0.5f, t);
+	update_rope(rp, t, false);
+	float hauteur = evaluate_terrain((surfeur->p.x) / 20 + 0.5f, (surfeur->p.y) / 20 + 0.5f, t).z;
 	if (hauteur > surfeur->p.z) {
 		surfeur->v += (hauteur - surfeur->p.z) / dt;
 		surfeur->p.z = hauteur;

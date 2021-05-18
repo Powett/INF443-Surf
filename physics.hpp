@@ -40,6 +40,5 @@ struct rope {
 };
 
 vcl::vec3 spring_force(vcl::vec3 const& p_i, vcl::vec3 const& p_j, float L_0, float K);
-void update_free_rope(rope* rp, float t);
-void update_hfixed_rope(rope* rp, float t);
+void update_rope(rope* rp, float t, bool free);
 void update_position(rope* rp, float t, vcl::vec3 position, vcl::vec3 vitesse);
