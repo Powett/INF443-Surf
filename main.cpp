@@ -48,6 +48,8 @@ float gScale = 0.7f;
 float bodyHeight = 1.0f * gScale;
 float bodyWidth = 0.5f * gScale;
 
+float waveH = 1.0f;
+
 float x, y, z;
 
 float deltaT;
@@ -213,7 +215,7 @@ void initialize_data()
 	hierarchy.add(board, "Board", "LFoot", { 0.8f * bodyWidth,0,-0.1f*bodyWidth});
 
 
-	terrain = mesh_drawable(create_terrain(false, 0));
+	terrain = mesh_drawable(create_terrain(true, 0));
 	terrain.shading.phong.specular = 0.2f;
 	terrain.shading.color = { 0,0,0.8f };
 }
@@ -260,7 +262,7 @@ void display_frame()
 	timer.update();
 	float const t = timer.t;
 
-	terrain.update_position(update_terrain(false, t));
+	terrain.update_position(update_terrain(true, waveH, t));
 
 	//hierarchy["Body"].transform.rotate = rotation({ 0,1,0 }, pi / 10 * (0.5f+ sin(2 * pi * t)));
 	//hierarchy["Head"].transform.rotate=rotation({1,0,0}, pi / 10 * sin(2 * pi * t));
@@ -301,6 +303,7 @@ void display_interface()
 {
 	ImGui::SliderFloat("Time", &timer.t, timer.t_min, timer.t_max);
 	ImGui::SliderFloat("Time scale", &timer.scale, 0.0f, 2.0f);
+	ImGui::SliderFloat("Waves Height", &waveH, 0.0f, 2.0f);
 	ImGui::Checkbox("Frame", &user.gui.display_frame);
 	ImGui::Checkbox("Display key positions", &user.gui.display_keyposition);
 	ImGui::Checkbox("Display polygon", &user.gui.display_polygon);
