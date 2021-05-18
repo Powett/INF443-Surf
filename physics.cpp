@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "physics.hpp"
+#include <terrain.hpp>
 
 using namespace vcl;
 
@@ -44,7 +45,7 @@ void update_free_rope(rope rp, float t) {
 
 		// Numerical Integration (Verlet)
 		{
-			n_speeds[i] = it->v + dt * f / m;
+			n_speeds[i] = (it->v) * 0.99f + dt * f / m;
 			n_positions[i] = it->p + dt * it->v;
 		}
 	}
@@ -72,3 +73,23 @@ for (int i = 0; i < particules.size(); i++) {
 }
 }***/
 
+void update_position(rope rp, float t, particule_structure* surfeur) {
+	float mu = rp.mu;
+	float K = rp.K;
+	float L0 = rp.L0;
+	float m = rp.m;
+	particle_structure* h = rp.points[rp.N]->v;
+	vec3 fh_damping = -mu * (surfeur->v - h->v);
+	vec3 fh_spring = spring_force(surfeur->p, h->p, L0, K);
+	vec3 fd_spring = spring_force(h->p, surfeur->p, L0, K);
+	vec3 fd_damping = -mu * (h->v - surfeur->v);
+	rp.points->v += (fd_spring + fd_damping) * dt / m;
+	surfeur->v += (fh_spring + fh_damping) * dt / (10*m);
+	surfeur->p += surfeur->v * dt;
+	update_free_rope(rp, t);
+	float hauteur = evaluate_terrain((surfeur->p.x) / 20 + 0.5f, (surfeur->p.y) / 20 + 0.5f, t);
+	if (hauteur > surfeur->p.z) {
+		surfeur->v += (hauteur - surfeur->p.z) / dt;
+		surfeur->p.z = hauteur;
+	}
+}
