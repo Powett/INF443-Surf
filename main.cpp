@@ -257,44 +257,48 @@ void display_frame()
 	/** Compute the (animated) transformations applied to the elements **/
 	/** *************************************************************  **/
 
-//	hierarchy["Body"].transform.translate = { p.x,p.y,0 };
-
 	timer.update();
 	float const t = timer.t;
 
+	float x = 5.f * cos(2 * pi * t);
+	float y = 5.f * sin(2 * pi * t);
+	hierarchy["Body"].transform.translate = evaluate_terrain_bruit({x,y,0}, t);
+	
 	terrain.update_position(update_terrain(true, waveH, t));
 
-	//hierarchy["Body"].transform.rotate = rotation({ 0,1,0 }, pi / 10 * (0.5f+ sin(2 * pi * t)));
-	//hierarchy["Head"].transform.rotate=rotation({1,0,0}, pi / 10 * sin(2 * pi * t));
+	hierarchy["Body"].transform.rotate = rotation({ 0,1,0 }, pi / 10 * (0.5f+ sin(2 * pi * t)));
+	hierarchy["Head"].transform.rotate=rotation({1,0,0}, pi / 10 * sin(2 * pi * t));
 
-	//hierarchy["RHip"].transform.rotate = rotation({ 1,0,0 }, pi/5 *(1+sin(2 * pi * t)));
-	//hierarchy["RKnee"].transform.rotate = rotation({ 1,0,0 }, - pi *2.0f/ 5.0f * (1 + sin(2 * pi * t)));
-	//hierarchy["LHip"].transform.rotate = rotation({ 1,0,0 }, pi / 5 * (1 + sin(2 * pi * (t-0.5f))));
-	//hierarchy["LKnee"].transform.rotate = rotation({ 1,0,0 }, -pi* 2.0f/ 5.0f * (1 + sin(2 * pi * (t-0.5f))));
+	hierarchy["RHip"].transform.rotate = rotation({ 1,0,0 }, pi/5 *(1+sin(2 * pi * t)));
+	hierarchy["RKnee"].transform.rotate = rotation({ 1,0,0 }, - pi *2.0f/ 5.0f * (1 + sin(2 * pi * t)));
+	hierarchy["LHip"].transform.rotate = rotation({ 1,0,0 }, pi / 5 * (1 + sin(2 * pi * (t-0.5f))));
+	hierarchy["LKnee"].transform.rotate = rotation({ 1,0,0 }, -pi* 2.0f/ 5.0f * (1 + sin(2 * pi * (t-0.5f))));
 
-	//hierarchy["RAnkle"].transform.rotate = rotation({ 1,0,0 }, pi / 5 * (1 + sin(2 * pi * t)));
-	//hierarchy["LAnkle"].transform.rotate = rotation({ 1,0,0 }, pi / 5 * (1 + sin(2 * pi * (t - 0.5f))));
+	hierarchy["RAnkle"].transform.rotate = rotation({ 1,0,0 }, pi / 5 * (1 + sin(2 * pi * t)));
+	hierarchy["LAnkle"].transform.rotate = rotation({ 1,0,0 }, pi / 5 * (1 + sin(2 * pi * (t - 0.5f))));
 
-	//hierarchy["LShoulder"].transform.rotate = rotation({ 0,1 / sqrt(2),1 / sqrt(2) }, -pi / 4 * (1 + sin(2 * pi * t)));
-	//hierarchy["LElbow"].transform.rotate = rotation({ 0,0,1 }, -pi / 4 * (1 + sin(2 * pi * t)));
-	//hierarchy["RShoulder"].transform.rotate = rotation({ 0,1 / sqrt(2),1 / sqrt(2) }, pi / 4 * (1 + sin(2 * pi * (t - 0.5f))));
-	//hierarchy["RElbow"].transform.rotate = rotation({ 0,0,1 }, pi / 4 * (1 + sin(2 * pi * (t - 0.5f))));
-	//hierarchy.update_local_to_global_coordinates();
-	//hierarchy["Board"].transform.translate.z = -(hierarchy["LFoot"].global_transform.translate.z - hierarchy["RFoot"].global_transform.translate.z) / 2;
-	//hierarchy["Board"].transform.rotate = rotation({ 0,1,0 }, pi-atan2(hierarchy["LFoot"].global_transform.translate.z -hierarchy["RFoot"].global_transform.translate.z, hierarchy["LFoot"].global_transform.translate.x - hierarchy["RFoot"].global_transform.translate.x));
-	//hierarchy.update_local_to_global_coordinates();
-
-	//// display the hierarchy
-	//draw(hierarchy, scene);
+	hierarchy["LShoulder"].transform.rotate = rotation({ 0,1 / sqrt(2),1 / sqrt(2) }, -pi / 4 * (1 + sin(2 * pi * t)));
+	hierarchy["LElbow"].transform.rotate = rotation({ 0,0,1 }, -pi / 4 * (1 + sin(2 * pi * t)));
+	hierarchy["RShoulder"].transform.rotate = rotation({ 0,1 / sqrt(2),1 / sqrt(2) }, pi / 4 * (1 + sin(2 * pi * (t - 0.5f))));
+	hierarchy["RElbow"].transform.rotate = rotation({ 0,0,1 }, pi / 4 * (1 + sin(2 * pi * (t - 0.5f))));
+	hierarchy.update_local_to_global_coordinates();
+	hierarchy["Board"].transform.translate.z = -(hierarchy["LFoot"].global_transform.translate.z - hierarchy["RFoot"].global_transform.translate.z) / 2;
+	hierarchy["Board"].transform.rotate = rotation({ 0,1,0 }, pi-atan2(hierarchy["LFoot"].global_transform.translate.z -hierarchy["RFoot"].global_transform.translate.z, hierarchy["LFoot"].global_transform.translate.x - hierarchy["RFoot"].global_transform.translate.x));
+	hierarchy.update_local_to_global_coordinates();
+	hierarchy["Body"].transform.translate += hierarchy["Body"].global_transform.translate- hierarchy["Board"].global_transform.translate;
+	hierarchy.update_local_to_global_coordinates();
+	// display the hierarchy
+	
 
 
 	if (user.gui.display_surface) {
 		draw(terrain, scene);
+		draw(hierarchy, scene);
 		//draw(vagues, scene);
 	}
 	if (user.gui.display_wireframe) {
-		/*draw_wireframe(hierarchy, scene);
-		draw_wireframe(board, scene);*/
+		draw_wireframe(hierarchy, scene);
+		draw_wireframe(board, scene);
 		draw_wireframe(terrain, scene);
 	}
 }
