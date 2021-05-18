@@ -13,13 +13,16 @@ vec3 uvToVec(float u, float v) {
 // Evaluate 3D position of the terrain for any (u,v) \in [0,1]
 vec3 evaluate_terrain(float u, float v, float t)
 {
+    //Sum of h*exp(-d/d0)*cos(2*pi*(d/d1-freq*t))
 
-    std::vector<vec2> p = { {0.f,0.f},{0.5f,0.5f}, {0.2f,0.7f},{0.8f,0.7f} };
-    std::vector<float> h = { 2.f*cos(2*pi*t), -1.f*cos(2 * pi * (t-1/2)), 1.f, 1.8f*cos(2 * pi * t) };
-    std::vector<float> sigma = { 0.5f,0.15f,0.2f,0.2f };
+    std::vector<vec2> p = { {-10.f,-10.f},{10.f,10.f}, {-10.f,10.f},{10.f,-10.f} };
+    std::vector<float> h = { 100.f, 100.f, 100.f, 100.f };
+    std::vector<float> d0 = { 2.0f, 2.0f, 2.0f, 2.0f };
+    std::vector<float> d1 = { 0.5f, 0.5f, 0.5f, 0.5f };
+    std::vector<float> f = {0.1f, 1.3f, 1.f, 0.7f };
 
-    float const x = 20*(u-0.5f);
-    float const y = 20*(v-0.5f);
+    float const x = uvToVec(u, v).x;
+    float const y = uvToVec(u, v).y;
 
     vec2 const u0 = {0.5f, 0.5f};
 
@@ -27,10 +30,10 @@ vec3 evaluate_terrain(float u, float v, float t)
 
     float z = 0;
     for (size_t i = 0; i < p.size(); i++) {
-        d=norm(vec2(u, v) - p[i]) / sigma[i];
-        z += h[i] * std::exp(-(d*d)); 
+        d = 0;
+        d=norm(vec2(u, v) - p[i]);
+        z += h[i] * std::exp(-d/d0[i]) * std::cos(2*pi*(d/d1[i] - f[i]*t)); 
     }
-
     return {x,y,z};
 }
 vec3 evaluate_terrain_bruit(float u, float v, float t) {
@@ -102,3 +105,24 @@ mesh create_terrain(bool bruit, float t)
     return terrain;
 }
 
+buffer<vec3> update_terrain(bool bruit, float t) {
+    int N = 100;
+    buffer<vec3> terrain = buffer<vec3>(N*N);
+    for (unsigned int ku = 0; ku < N; ++ku)
+    {
+        for (unsigned int kv = 0; kv < N; ++kv)
+        {
+            // Compute local parametric coordinates (u,v) \in [0,1]
+            const float u = ku / (N - 1.0f);
+            const float v = kv / (N - 1.0f);
+
+            // Compute the local surface function
+
+            vec3 const p = bruit ? evaluate_terrain_bruit(u, v, t) : evaluate_terrain(u, v, t);
+
+            // Store vertex coordinates
+            terrain[kv + N * ku] = p;
+        }
+    }
+    return terrain;
+}
