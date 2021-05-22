@@ -45,6 +45,9 @@ vec3 evaluate_terrain_bruit(float u, float v, float t) {
 vec3 evaluate_terrain_bruit(vec3 p, float t) {
     return evaluate_terrain_bruit((p.x) / 20 + 0.5f, (p.y) / 20 + 0.5f, t);
 }
+vec3 evaluate_terrain(vec3 p, float t) {
+    return evaluate_terrain((p.x) / 20 + 0.5f, (p.y) / 20 + 0.5f, t);
+}
 vec3 evaluate_normal(vec3 p, float t) {
     float dx = 0.01f;
     vec3 up = p + vec3(0, dx, 0);
