@@ -4,7 +4,7 @@
 #pragma once
 
 vcl::vec3 const g = { 0,0,-9.81f }; // gravity
-float const dt = 0.001f;
+float const dt = 0.01f;
 float const dl = 0.01f;
 
 struct particle_structure
@@ -20,7 +20,7 @@ struct particle_structure
 };
 
 struct rope {
-	float N;
+	int N;
 	float K;
 	float mu;
 	float m;
@@ -43,5 +43,5 @@ struct rope {
 };
 
 vcl::vec3 spring_force(vcl::vec3 const& p_i, vcl::vec3 const& p_j, float L_0, float K);
-void update_rope(rope rp, float t, bool free);
-void update_positions(rope* rp, float t, particle_structure* surfeur);
+void update_rope(struct rope* rp, float t, bool free);
+void update_positions(struct rope* rp, float t, particle_structure* surfeur);

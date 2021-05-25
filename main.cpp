@@ -33,7 +33,7 @@ void display_frame();
 mesh_drawable sphere_current;    // sphere used to display the interpolated value
 mesh_drawable sphere_keyframe;   // sphere used to display the key positions
 curve_drawable polygon_keyframe; // Display the segment between key positions
-curve_drawable rope;
+curve_drawable rope_drawable;
 
 mesh_drawable board;
 
@@ -41,6 +41,7 @@ hierarchy_mesh_drawable hierarchy;
 mesh_drawable terrain;
 mesh_drawable test_sphere;
 struct rope* rp;
+struct particle_structure* surfeur;
 
 float bigRadius = 10.0f;
 
@@ -164,8 +165,10 @@ void initialize_data()
 
 	polygon_keyframe = curve_drawable(key_positions);
 	polygon_keyframe.color = { 0,0,0 };
-	rp = new struct rope(10, 10.0f, 1.0f, 0.1f, { 0,0,0 }, { 5,5,0 });
-	rope = curve_drawable(rp->n_positions);
+	rp = new struct rope(10, 100.0, 5.0f, 0.1f, { 0,0,4 }, { 2,0,0 });
+	rope_drawable = curve_drawable(rp->n_positions);
+
+	//surfeur = new struct particle_structure(evaluate_terrain(0.5f, 0.5f, 0), {0, 0, 0}, 0.1f);
 
 
 	board = mesh_drawable(create_surfboard(7.0f * bodyHeight, 3.0f * bodyWidth, 0.5f * bodyWidth));
@@ -194,7 +197,7 @@ void initialize_data()
 	arm.transform.rotate = rotation({ 0,1,0 }, pi / 2);
 	forearm.transform.rotate = rotation({ 0,1,0 }, pi / 2);
 	foot.transform.rotate = rotation({ 1,0,0 }, pi / 2);
-	head.texture = opengl_texture_to_gpu(image_load_png("../Assets/face.png"),
+	head.texture = opengl_texture_to_gpu(image_load_png("../Assets/rim.png"),
 		GL_REPEAT,
 		GL_MIRRORED_REPEAT);
 
@@ -289,9 +292,15 @@ void display_frame()
 	vec3 front = evaluate_terrain(p + normal_direction * dl, t);
 	vec3 back = evaluate_terrain(p - normal_direction * dl, t);
 
+	struct rope test = *rp;
+	update_positions(rp, t, surfeur);
+	//update_rope(rp, t, false);
+	rope_drawable = curve_drawable(rp->n_positions);
+	
 
 	float yaw = std::atan2(dp.y, dp.x);
-	hierarchy["Body"].transform.translate = p;
+	hierarchy["Body"].transform.translate = rp->points[rp->N -1]->p;
+	//hierarchy["Body"].transform.translate = surfeur->p;
 	hierarchy["Body"].transform.rotate = rotation({ 0,0,1 }, yaw);
 	hierarchy.update_local_to_global_coordinates();
 
@@ -320,7 +329,7 @@ void display_frame()
 	hierarchy["LAnkle"].transform.rotate = rotation({ 1,0,0 }, -roll-beta/2);
 	hierarchy.update_local_to_global_coordinates();
 
-	hierarchy["Body"].transform.translate = 1.15f*(hierarchy["Body"].global_transform.translate- hierarchy["Board"].global_transform.translate) + evaluate_terrain_bruit(hierarchy["Board"].global_transform.translate, t);
+	std::cout << 1.15f*(hierarchy["Body"].global_transform.translate- hierarchy["Board"].global_transform.translate)<< std::endl;
 	
 	/*hierarchy["Body"].transform.translate = { 0,0,0 };
 	hierarchy["Body"].transform.rotate = rotation();*/
@@ -330,8 +339,14 @@ void display_frame()
 	hierarchy.update_local_to_global_coordinates();
 
 
+
 	draw(hierarchy, scene);
-	draw(test_sphere, scene);
+	//draw(test_sphere, scene);
+	draw(rope_drawable, scene);
+	for (vec3 x : rp->n_positions) {
+		test_sphere.transform.translate = x;
+		draw(test_sphere, scene);
+	}
 	if (user.gui.display_surface) {
 		draw(terrain, scene);
 	}
@@ -339,6 +354,8 @@ void display_frame()
 		draw_wireframe(hierarchy, scene);
 		draw_wireframe(terrain, scene);
 	}
+
+
 }
 
 void display_interface()
