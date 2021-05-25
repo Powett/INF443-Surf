@@ -93,9 +93,16 @@ void update_positions(struct rope* rp, float t, particle_structure* surfeur) {
 	surfeur->v += (fh_spring + fh_damping) * dt / surfeur->m;
 	surfeur->p += surfeur->v * dt;*/
 	update_rope(rp, t, false);
+<<<<<<< Updated upstream
 	float hauteur = evaluate_terrain(rp->points[rp->N -1]->p, t).z;
 	if (hauteur + offset > rp->points[rp->N - 1]->p.z) {
 		rp->points[rp->N - 1]->v += 10*vec3( 0,0,(hauteur + offset - rp->points[rp->N - 1]->p.z) / dt );
 		rp->points[rp->N - 1]->p.z = hauteur + offset ;
+=======
+	float hauteur = evaluate_terrain_bruit((surfeur->p.x) / 20 + 0.5f, (surfeur->p.y) / 20 + 0.5f, t, 0.0f).z;
+	if (hauteur > surfeur->p.z) {
+		surfeur->v += (hauteur - surfeur->p.z) / dt;
+		surfeur->p.z = hauteur;
+>>>>>>> Stashed changes
 	}
 }

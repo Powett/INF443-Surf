@@ -19,6 +19,7 @@ buffer<float> key_times;
 float totalLength = 0;
 timer_interval timer;
 
+int recalcterrain = 0;
 
 
 void mouse_move_callback(GLFWwindow* window, double xpos, double ypos);
@@ -39,6 +40,7 @@ mesh_drawable board;
 
 hierarchy_mesh_drawable hierarchy;
 mesh_drawable terrain;
+mesh_drawable vagues;
 mesh_drawable test_sphere;
 struct rope* rp;
 struct particle_structure* surfeur;
@@ -54,7 +56,10 @@ float thighLength;
 float effectifeThighLength;
 float averageLegLength;
 
-float waveH = 1.0f;
+float waveH = 0.7f;
+float terrain_bruit = 0.1f;
+float vagues_bruit = 0.2f;
+float physics_bruit = 0.0f;
 
 float x, y, z;
 
@@ -136,7 +141,7 @@ void initialize_data()
 	// Key positions
 	key_positions = { {0,10,5}, {5,10,5},{-10,1,5}, {-5,-10,5}, {0,10,5}, {5,10,5} };
 	// Key times
-	key_times = { 0.0f, 2.0f, 2.5f, 3.0f, 3.5f, 4.1f };
+	key_times = { 0.0f, 2.0f, 2.5f, 3.0f, 3.5f, 10.1f };
 	float key_times_max = key_times[key_times.size() - 1];
 
 	for (int i = 0; i < key_positions.size(); i++) {
@@ -236,9 +241,17 @@ void initialize_data()
 
 	feetSpread = std::abs((hierarchy["RFoot"].global_transform.translate - hierarchy["LFoot"].global_transform.translate).x);
 	effectifeThighLength = (hierarchy["LHip"].global_transform.translate - hierarchy["LKnee"].global_transform.translate).z/2;
-	terrain = mesh_drawable(create_terrain(true, 0));
+	terrain = mesh_drawable(create_terrain_bruit(0, terrain_bruit));
 	terrain.shading.phong.specular = 0.2f;
-	terrain.shading.color = { 0,0,0.8f };
+	terrain.shading.alpha = 0.2f;
+	terrain.shading.color = { 0.5f,0.5f,0.95f } ;
+
+	vagues = mesh_drawable(create_terrain_bruit(0, vagues_bruit));
+	vagues.shading.phong.specular = 0.0f;
+	/*terrain.shading.phong.diffuse = 0.8f;*/
+	terrain.shading.phong.ambient = 0.8f;
+	vagues.shading.alpha = 0.8f;
+	vagues.shading.color = { 0,0,1.0f };
 }
 
 
@@ -274,23 +287,28 @@ void display_frame()
 
 	timer.update();
 	float const t = timer.t;
-	terrain.update_position(update_terrain(true, waveH, t));
+	recalcterrain++;
+	if (recalcterrain > 1) {
+		terrain.update_position(update_terrain(waveH, t, terrain_bruit));
+		vagues.update_position(update_terrain(waveH, t, vagues_bruit));
+		recalcterrain = 0;
+	}
 
 	float x = 5.f * cos(2 * pi * t);
 	float y = 5.f * sin(2 * pi * t);
 	float x2 = 5.f * cos(2 * pi *( t+dt));
 	float y2 = 5.f * sin(2 * pi * (t + dt));
-	vec3 p = evaluate_terrain({ x,y,0 }, t);
-	vec3 dp = (evaluate_terrain({ x2,y2,0 }, t + dt) - p);
+	vec3 p = evaluate_terrain_bruit({ x,y,0 }, t, physics_bruit);
+	vec3 dp = (evaluate_terrain_bruit({ x2,y2,0 }, t + dt, physics_bruit) - p);
 	vec3 unit_direction = dp / norm(dp);
 
 	vec3 normal_direction = { unit_direction.y, -unit_direction.x,0 };
 
 	
-	vec3 nose = evaluate_terrain(p + unit_direction * dl, t);
-	vec3 tail = evaluate_terrain(p - unit_direction * dl, t);
-	vec3 front = evaluate_terrain(p + normal_direction * dl, t);
-	vec3 back = evaluate_terrain(p - normal_direction * dl, t);
+	vec3 nose = evaluate_terrain_bruit(p + unit_direction * dl, t, physics_bruit);
+	vec3 tail = evaluate_terrain_bruit(p - unit_direction * dl, t, physics_bruit);
+	vec3 front = evaluate_terrain_bruit(p + normal_direction * dl, t, physics_bruit);
+	vec3 back = evaluate_terrain_bruit(p - normal_direction * dl, t, physics_bruit);
 
 	struct rope test = *rp;
 	update_positions(rp, t, surfeur);
@@ -304,8 +322,8 @@ void display_frame()
 	hierarchy["Body"].transform.rotate = rotation({ 0,0,1 }, yaw);
 	hierarchy.update_local_to_global_coordinates();
 
-	vec3 frontFoot = evaluate_terrain(p + hierarchy["RFoot"].global_transform.translate - hierarchy["Body"].global_transform.translate, t);
-	vec3 backFoot = evaluate_terrain(p + hierarchy["LFoot"].global_transform.translate - hierarchy["Body"].global_transform.translate, t);
+	vec3 frontFoot = evaluate_terrain_bruit(p + hierarchy["RFoot"].global_transform.translate - hierarchy["Body"].global_transform.translate, t, physics_bruit);
+	vec3 backFoot = evaluate_terrain_bruit(p + hierarchy["LFoot"].global_transform.translate - hierarchy["Body"].global_transform.translate, t, physics_bruit);
 	float deltaH = (frontFoot - backFoot).z;
 	
 	float pitch = atan2((frontFoot - backFoot).z, feetSpread/2);
@@ -329,26 +347,38 @@ void display_frame()
 	hierarchy["LAnkle"].transform.rotate = rotation({ 1,0,0 }, -roll-beta/2);
 	hierarchy.update_local_to_global_coordinates();
 
+<<<<<<< Updated upstream
 	std::cout << 1.15f*(hierarchy["Body"].global_transform.translate- hierarchy["Board"].global_transform.translate)<< std::endl;
+=======
+	
+>>>>>>> Stashed changes
 	
 	/*hierarchy["Body"].transform.translate = { 0,0,0 };
 	hierarchy["Body"].transform.rotate = rotation();*/
-	hierarchy.update_local_to_global_coordinates();
 	
-	hierarchy["Board"].global_transform.translate = (hierarchy["RFoot"].global_transform.translate + hierarchy["LFoot"].global_transform.translate) / 2;
+	//hierarchy["Board"].transform.translate = (-hierarchy["RFoot"].global_transform.translate + hierarchy["LFoot"].global_transform.translate) / 2;
+	hierarchy.update_local_to_global_coordinates();
+	hierarchy["Body"].transform.translate = (1.0f + 0.7f*waveH) * (hierarchy["Body"].global_transform.translate - hierarchy["Board"].global_transform.translate) + evaluate_terrain_bruit(hierarchy["Board"].global_transform.translate, t, 0.0f);
 	hierarchy.update_local_to_global_coordinates();
 
+	scene.camera.distance_to_center = 2.5f;
+	scene.camera.look_at(vec3({0, 0, 2.0f}), p, { 0,0,1 });
 
 
 	draw(hierarchy, scene);
+<<<<<<< Updated upstream
 	//draw(test_sphere, scene);
 	draw(rope_drawable, scene);
 	for (vec3 x : rp->n_positions) {
 		test_sphere.transform.translate = x;
 		draw(test_sphere, scene);
 	}
+=======
+	
+>>>>>>> Stashed changes
 	if (user.gui.display_surface) {
 		draw(terrain, scene);
+		draw(vagues, scene);
 	}
 	if (user.gui.display_wireframe) {
 		draw_wireframe(hierarchy, scene);
