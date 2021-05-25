@@ -170,7 +170,7 @@ void initialize_data()
 
 	polygon_keyframe = curve_drawable(key_positions);
 	polygon_keyframe.color = { 0,0,0 };
-	rp = new struct rope(10, 100.0, 5.0f, 0.1f, { 0,0,4 }, { 2,0,0 });
+	rp = new struct rope(3, 100.0, 5.0f, 0.1f, { 0,0,4 }, { 2,0,0 });
 	rope_drawable = curve_drawable(rp->n_positions);
 
 	//surfeur = new struct particle_structure(evaluate_terrain(0.5f, 0.5f, 0), {0, 0, 0}, 0.1f);
@@ -310,7 +310,9 @@ void display_frame()
 	vec3 front = evaluate_terrain_bruit(p + normal_direction * dl, t, physics_bruit);
 	vec3 back = evaluate_terrain_bruit(p - normal_direction * dl, t, physics_bruit);
 
-	struct rope test = *rp;
+
+	rp->points[0]->p = { x,y,-10 };
+	rp->points[0]->v = dp/dt;
 	update_positions(rp, t, surfeur);
 	//update_rope(rp, t, false);
 	rope_drawable = curve_drawable(rp->n_positions);
@@ -346,36 +348,27 @@ void display_frame()
 	hierarchy["LKnee"].transform.rotate = rotation({ 1,0,0 }, beta);
 	hierarchy["LAnkle"].transform.rotate = rotation({ 1,0,0 }, -roll-beta/2);
 	hierarchy.update_local_to_global_coordinates();
-
-<<<<<<< Updated upstream
-	std::cout << 1.15f*(hierarchy["Body"].global_transform.translate- hierarchy["Board"].global_transform.translate)<< std::endl;
-=======
-	
->>>>>>> Stashed changes
 	
 	/*hierarchy["Body"].transform.translate = { 0,0,0 };
 	hierarchy["Body"].transform.rotate = rotation();*/
 	
 	//hierarchy["Board"].transform.translate = (-hierarchy["RFoot"].global_transform.translate + hierarchy["LFoot"].global_transform.translate) / 2;
 	hierarchy.update_local_to_global_coordinates();
-	hierarchy["Body"].transform.translate = (1.0f + 0.7f*waveH) * (hierarchy["Body"].global_transform.translate - hierarchy["Board"].global_transform.translate) + evaluate_terrain_bruit(hierarchy["Board"].global_transform.translate, t, 0.0f);
+	//hierarchy["Body"].transform.translate = (1.0f + 0.7f*waveH) * (hierarchy["Body"].global_transform.translate - hierarchy["Board"].global_transform.translate) + evaluate_terrain_bruit(hierarchy["Board"].global_transform.translate, t, 0.0f);
 	hierarchy.update_local_to_global_coordinates();
 
-	scene.camera.distance_to_center = 2.5f;
-	scene.camera.look_at(vec3({0, 0, 2.0f}), p, { 0,0,1 });
+	/*scene.camera.distance_to_center = 2.5f;
+	scene.camera.look_at(vec3({0, 0, 2.0f}), p, { 0,0,1 });*/
 
 
 	draw(hierarchy, scene);
-<<<<<<< Updated upstream
 	//draw(test_sphere, scene);
 	draw(rope_drawable, scene);
 	for (vec3 x : rp->n_positions) {
 		test_sphere.transform.translate = x;
 		draw(test_sphere, scene);
 	}
-=======
 	
->>>>>>> Stashed changes
 	if (user.gui.display_surface) {
 		draw(terrain, scene);
 		draw(vagues, scene);
