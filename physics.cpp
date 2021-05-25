@@ -8,7 +8,7 @@
 #include <terrain.hpp>
 
 using namespace vcl;
-float offset = 0.8f;
+float offset = 0.9f;
 
 /** Compute spring force applied on particle pi from particle pj */
 vec3 spring_force(vec3 const& p_i, vec3 const& p_j, float L_0, float K)
@@ -27,7 +27,7 @@ void update_rope(struct rope* rp, float t, bool free) {
 	for (unsigned long i = d; i < particules.size(); ++i)
 	{
 		particle_structure* it = particules[i];
-		float m = it->m;
+		float m = it->m * ((i == particules.size()-1) ? 50 :1);
 		vec3 fh_spring = { 0,0,0 };
 		vec3 fh_damping = { 0,0,0 };
 		vec3 fd_spring = { 0,0,0 };
@@ -51,7 +51,7 @@ void update_rope(struct rope* rp, float t, bool free) {
 			rp->n_positions[i] = it->p + dt * it->v;
 		}
 	}
-	for (unsigned long i = 1; i < particules.size(); i++) {
+	for (unsigned long i = 0; i < particules.size(); i++) {
 		particle_structure* it = particules[i];
 		it->p = rp->n_positions[i];
 		it->v = rp->n_speeds[i];
@@ -60,38 +60,8 @@ void update_rope(struct rope* rp, float t, bool free) {
 
 
 
-/***
-void draw_rope(rope rp){
-	sphere.transform.translate = particules[0]->p;
-sphere.shading.color = { 0,0,0 };
-draw(sphere, scene);
-for (int i = 0; i < particules.size(); i++) {
-	particle_structure* it = particules[i];
-	it->p = n_positions[i];
-	it->v = n_speeds[i];
-	sphere.transform.translate = it->p;
-	sphere.shading.color = { 1,0,0 };
-	draw(sphere, scene);
-	if (i > 0) {
-		display_segment(n_positions[i - 1], it->p);
-	}
-}
-}***/
 
 void update_positions(struct rope* rp, float t, particle_structure* surfeur) {
-	/*float mu = rp->mu;
-	float K = rp->K;
-	float L0 = rp->L0;
-	float m = rp->m;
-	particle_structure* h = rp->points[(int) (rp->N - 1)];
-	vec3 fh_damping = -mu * (surfeur->v - h->v);
-	vec3 fh_spring = spring_force(surfeur->p, h->p, L0, K);
-	vec3 fd_spring = spring_force(h->p, surfeur->p, L0, K);
-	vec3 fd_damping = -mu * (h->v - surfeur->v);
-	vec3 f_weight = m * g;
-	h->v += (fd_spring + fd_damping) * dt / m;
-	surfeur->v += (fh_spring + fh_damping) * dt / surfeur->m;
-	surfeur->p += surfeur->v * dt;*/
 	update_rope(rp, t, false);
 	float hauteur = evaluate_terrain_bruit((rp->points[rp->N-1]->p.x) / 20 + 0.5f, (rp->points[rp->N - 1]->p.y) / 20 + 0.5f, t, 0.0f).z;
 	if (hauteur + offset > rp->points[rp->N - 1]->p.z) {

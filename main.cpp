@@ -170,7 +170,7 @@ void initialize_data()
 
 	polygon_keyframe = curve_drawable(key_positions);
 	polygon_keyframe.color = { 0,0,0 };
-	rp = new struct rope(3, 100.0, 5.0f, 0.1f, { 0,0,4 }, { 2,0,0 });
+	rp = new struct rope(10, 500.0, 5.0f, 0.1f, { 0,0,10 }, { 10,0,0 });
 	rope_drawable = curve_drawable(rp->n_positions);
 
 	//surfeur = new struct particle_structure(evaluate_terrain(0.5f, 0.5f, 0), {0, 0, 0}, 0.1f);
@@ -202,7 +202,7 @@ void initialize_data()
 	arm.transform.rotate = rotation({ 0,1,0 }, pi / 2);
 	forearm.transform.rotate = rotation({ 0,1,0 }, pi / 2);
 	foot.transform.rotate = rotation({ 1,0,0 }, pi / 2);
-	head.texture = opengl_texture_to_gpu(image_load_png("../Assets/rim.png"),
+	head.texture = opengl_texture_to_gpu(image_load_png("../Assets/face.png"),
 		GL_REPEAT,
 		GL_MIRRORED_REPEAT);
 
@@ -294,10 +294,10 @@ void display_frame()
 		recalcterrain = 0;
 	}
 
-	float x = 5.f * cos(2 * pi * t);
-	float y = 5.f * sin(2 * pi * t);
-	float x2 = 5.f * cos(2 * pi *( t+dt));
-	float y2 = 5.f * sin(2 * pi * (t + dt));
+	float x = 1.f * cos(2 * pi * t);
+	float y = 1.f * sin(2 * pi * t);
+	float x2 = 1.f * cos(2 * pi *( t+dt));
+	float y2 = 1.f * sin(2 * pi * (t + dt));
 	vec3 p = evaluate_terrain_bruit({ x,y,0 }, t, physics_bruit);
 	vec3 dp = (evaluate_terrain_bruit({ x2,y2,0 }, t + dt, physics_bruit) - p);
 	vec3 unit_direction = dp / norm(dp);
@@ -311,52 +311,51 @@ void display_frame()
 	vec3 back = evaluate_terrain_bruit(p - normal_direction * dl, t, physics_bruit);
 
 
-	rp->points[0]->p = { x,y,-10 };
+	rp->points[0]->p = { x,y,10 };
 	rp->points[0]->v = dp/dt;
+	rp->n_positions[0] = { x2,y2,10 };
+	rp->n_speeds[0] = dp / dt;
 	update_positions(rp, t, surfeur);
 	//update_rope(rp, t, false);
 	rope_drawable = curve_drawable(rp->n_positions);
 	
+	p = rp->n_positions[rp->N - 1] * dt;
+	dp = rp->n_speeds[rp->N - 1]*dt;
 
 	float yaw = std::atan2(dp.y, dp.x);
 	hierarchy["Body"].transform.translate = rp->points[rp->N -1]->p;
-	//hierarchy["Body"].transform.translate = surfeur->p;
 	hierarchy["Body"].transform.rotate = rotation({ 0,0,1 }, yaw);
 	hierarchy.update_local_to_global_coordinates();
 
-	vec3 frontFoot = evaluate_terrain_bruit(p + hierarchy["RFoot"].global_transform.translate - hierarchy["Body"].global_transform.translate, t, physics_bruit);
-	vec3 backFoot = evaluate_terrain_bruit(p + hierarchy["LFoot"].global_transform.translate - hierarchy["Body"].global_transform.translate, t, physics_bruit);
-	float deltaH = (frontFoot - backFoot).z;
-	
-	float pitch = atan2((frontFoot - backFoot).z, feetSpread/2);
-	hierarchy["RFoot"].transform.rotate = rotation({ 0,1,0 }, -pitch);
-	
+	vec3 frontFoot = hierarchy["RFoot"].global_transform.translate;
+	vec3 backFoot = hierarchy["LFoot"].global_transform.translate;
+	float deltaH = (evaluate_terrain_bruit(frontFoot, t, physics_bruit) - evaluate_terrain_bruit(backFoot, t, physics_bruit)).z;
+	float pitch = atan2(deltaH, feetSpread);
+	//hierarchy["Board"].transform.translate = vec3(0, 0, +0.1f * bodyWidth) + (-hierarchy["RFoot"].global_transform.translate + hierarchy["LFoot"].global_transform.translate) / 2;
+	hierarchy["Board"].transform.rotate = rotation({ 0,1,0 }, -pitch);
+	hierarchy.update_local_to_global_coordinates();
+
 	float roll = atan2(deltaH, feetSpread);
 	float arg = averageLegLength / (2* thighLength) - deltaH / (4*thighLength);
-	arg = (arg >= 0.0f) ? ((arg <= 1.0f) ? arg : 1.0f) : 0.0f;
+	arg = (arg >= -1.0f) ? ((arg <= 1.0f) ? arg : 1.0f) : -1.0f;
 	float alpha = acos(arg);
 	float beta =-2*alpha;
 	hierarchy["RHip"].transform.rotate = rotation({ 1,0,0 }, alpha);
 	hierarchy["RKnee"].transform.rotate = rotation({ 1,0,0 }, beta);
-	hierarchy["RAnkle"].transform.rotate = rotation({ 1,0,0 }, -roll -beta/2 );
+	hierarchy["RAnkle"].transform.rotate = rotation({ 1,0,0 }, (-beta/2) );
 
 	arg = averageLegLength / (2*thighLength) + deltaH / (4*thighLength);
-	arg = (arg >= 0.0f) ? ((arg <= 1.0f) ? arg : 1.0f) : 0.0f;
+	arg = (arg >= -1.0f) ? ((arg <= 1.0f) ? arg : 1.0f) : -1.0f;
 	alpha = acos(arg);
 	beta = -2 * alpha;
 	hierarchy["LHip"].transform.rotate = rotation({ 1,0,0 }, alpha);
 	hierarchy["LKnee"].transform.rotate = rotation({ 1,0,0 }, beta);
-	hierarchy["LAnkle"].transform.rotate = rotation({ 1,0,0 }, -roll-beta/2);
-	hierarchy.update_local_to_global_coordinates();
-	
-	/*hierarchy["Body"].transform.translate = { 0,0,0 };
-	hierarchy["Body"].transform.rotate = rotation();*/
-	
-	//hierarchy["Board"].transform.translate = (-hierarchy["RFoot"].global_transform.translate + hierarchy["LFoot"].global_transform.translate) / 2;
-	hierarchy.update_local_to_global_coordinates();
-	//hierarchy["Body"].transform.translate = (1.0f + 0.7f*waveH) * (hierarchy["Body"].global_transform.translate - hierarchy["Board"].global_transform.translate) + evaluate_terrain_bruit(hierarchy["Board"].global_transform.translate, t, 0.0f);
+	hierarchy["LAnkle"].transform.rotate = rotation({ 1,0,0 }, -beta/2);
 	hierarchy.update_local_to_global_coordinates();
 
+	hierarchy["Body"].transform.translate = { 0,0,0 };
+	hierarchy["Body"].transform.rotate = rotation();
+	hierarchy.update_local_to_global_coordinates();
 	/*scene.camera.distance_to_center = 2.5f;
 	scene.camera.look_at(vec3({0, 0, 2.0f}), p, { 0,0,1 });*/
 
