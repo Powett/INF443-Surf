@@ -5,6 +5,9 @@
 
 using namespace vcl;
 
+float waveHeight=1.0f;
+const unsigned int N = 200;
+
 vec3 uvToVec(float u, float v) {
     return { 20 * (u - 0.5f),20 * (v - 0.5f),0 };
 }
@@ -15,35 +18,35 @@ vec3 evaluate_terrain(float u, float v, float t)
 {
     //Sum of h*exp(-d/d0)*cos(2*pi*(d/d1-freq*t))
 
-    std::vector<vec2> p = { {-10.f,-10.f},{10.f,10.f}, {-10.f,10.f},{10.f,-10.f} };
-    std::vector<float> h = { 100.f, 100.f, 100.f, 100.f };
-    std::vector<float> d0 = { 2.0f, 2.0f, 2.0f, 2.0f };
-    std::vector<float> d1 = { 0.5f, 0.5f, 0.5f, 0.5f };
-    std::vector<float> f = {0.1f, 1.3f, 1.f, 0.7f };
-
+    std::vector<vec2> p = { {-30.f,-30.f},{-10.0f,-30.f}, {10.f,-30.f},{30.f,-30.f} };
+    std::vector<float> h = { 1.f, 2.f, 2.5f, 1.f };
+    std::vector<float> d0 = { 25.0f, 25.0f, 25.0f, 25.0f };
+    std::vector<float> d1 = { 15.f, 15.f, 15.f, 15.f };
+    float vit = 5.0f;
     float const x = uvToVec(u, v).x;
     float const y = uvToVec(u, v).y;
 
-    vec2 const u0 = {0.5f, 0.5f};
 
     float d = 0;
 
     float z = 0;
     for (size_t i = 0; i < p.size(); i++) {
         d = 0;
-        d=norm(vec2(u, v) - p[i]);
-        z += h[i] * std::exp(-d/d0[i]) * std::cos(2*pi*(d/d1[i] - f[i]*t)); 
+        d=norm(vec2(x, y) - p[i]);
+        z += waveHeight*h[i] * std::exp(-pow(d/d0[i],2)) * std::cos(2*pi*(d/d1[i] - vit*t/d1[i])); 
     }
     return {x,y,z};
 }
 vec3 evaluate_terrain_bruit(float u, float v, float t) {
     vec3 p = evaluate_terrain(u, v,t);
-    p.z*=( 1+0.2F*noise_perlin({ u, v }, 2, 1.2f, 10.0f));
-    p.z -= 0.3f;
+    p.z*=( 1+0.4F*noise_perlin({ u, v }, 5, 1.1f, 2.0f));
     return p;
 }
 vec3 evaluate_terrain_bruit(vec3 p, float t) {
     return evaluate_terrain_bruit((p.x) / 20 + 0.5f, (p.y) / 20 + 0.5f, t);
+}
+vec3 evaluate_terrain(vec3 p, float t) {
+    return evaluate_terrain((p.x) / 20 + 0.5f, (p.y) / 20 + 0.5f, t);
 }
 vec3 evaluate_normal(vec3 p, float t) {
     float dx = 0.01f;
@@ -59,8 +62,6 @@ vec3 evaluate_normal(vec3 p, float t) {
 
 mesh create_terrain(bool bruit, float t)
 {
-    // Number of samples of the terrain is N x N
-    const unsigned int N = 100;
 
     mesh terrain; // temporary terrain storage (CPU only)
     terrain.position.resize(N*N);
@@ -105,8 +106,8 @@ mesh create_terrain(bool bruit, float t)
     return terrain;
 }
 
-buffer<vec3> update_terrain(bool bruit, float t) {
-    int N = 100;
+buffer<vec3> update_terrain(bool bruit, float waveH, float t) {
+    waveHeight = waveH;
     buffer<vec3> terrain = buffer<vec3>(N*N);
     for (unsigned int ku = 0; ku < N; ++ku)
     {
