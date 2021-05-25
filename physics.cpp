@@ -91,7 +91,7 @@ void update_position(rope rp, float t, particle_structure* surfeur) {
 	surfeur->v += (fh_spring + fh_damping) * dt / (10*m);
 	surfeur->p += surfeur->v * dt;
 	update_rope(rp, t, false);
-	float hauteur = evaluate_terrain((surfeur->p.x) / 20 + 0.5f, (surfeur->p.y) / 20 + 0.5f, t).z;
+	float hauteur = evaluate_terrain_bruit((surfeur->p.x) / 20 + 0.5f, (surfeur->p.y) / 20 + 0.5f, t, 0.0f).z;
 	if (hauteur > surfeur->p.z) {
 		surfeur->v += (hauteur - surfeur->p.z) / dt;
 		surfeur->p.z = hauteur;
