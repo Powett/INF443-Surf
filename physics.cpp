@@ -22,11 +22,11 @@ void update_rope(rope rp, float t, bool free) {
 	float mu = rp.mu;
 	float K = rp.K;
 	float L0 = rp.L0;
-	float m = rp.m;
 	int const d = free ? 0 : 1;
 	for (int i = d; i < particules.size() - 1; ++i)
 	{
 		particle_structure* it = particules[i];
+		float m = it->m;
 		vec3 fh_spring = { 0,0,0 };
 		vec3 fh_damping = { 0,0,0 };
 		vec3 fd_spring = { 0,0,0 };
@@ -77,7 +77,7 @@ for (int i = 0; i < particules.size(); i++) {
 }
 }***/
 
-void update_position(rope rp, float t, particle_structure* surfeur) {
+void update_positions(rope rp, float t, particle_structure* surfeur) {
 	float mu = rp.mu;
 	float K = rp.K;
 	float L0 = rp.L0;

@@ -11,9 +11,11 @@ struct particle_structure
 {
 	vcl::vec3 p; // Position
 	vcl::vec3 v; // Speed
-	particle_structure(vcl::vec3 pos, vcl::vec3 speed) {
+	float m;
+	particle_structure(vcl::vec3 pos, vcl::vec3 speed, float masse) {
 		p = pos;
 		v = speed;
+		m = masse;
 	}
 };
 
@@ -33,7 +35,7 @@ struct rope {
 		this->m = m;
 		this->L0 = norm((pf-p0))/N;
 		for (int i = 0; i < N; i++) {
-			points.push_back(new particle_structure(p0+i*(pf-p0)/N, { 0,0,0 }));
+			points.push_back(new particle_structure(p0+i*(pf-p0)/N, { 0,0,0 }, m));
 			n_positions.push_back(p0 + i * (pf - p0) / N);
 			n_speeds.push_back({ 0,0,0 });
 		}
@@ -41,5 +43,5 @@ struct rope {
 };
 
 vcl::vec3 spring_force(vcl::vec3 const& p_i, vcl::vec3 const& p_j, float L_0, float K);
-void update_rope(rope* rp, float t, bool free);
-void update_position(rope* rp, float t, vcl::vec3 position, vcl::vec3 vitesse);
+void update_rope(rope rp, float t, bool free);
+void update_positions(rope* rp, float t, particle_structure* surfeur);
