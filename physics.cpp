@@ -13,7 +13,7 @@ float offset = 0.9f;
 /** Compute spring force applied on particle pi from particle pj */
 vec3 spring_force(vec3 const& p_i, vec3 const& p_j, float L_0, float K)
 {
-	return K * ((p_j - p_i) - L_0 * (p_j - p_i) / norm((p_j - p_i)));
+	return (norm(p_j - p_i) > L_0) ? K * ((p_j - p_i) - L_0 * (p_j - p_i) / norm(p_j - p_i)) : vec3(0, 0, 0);
 }
 
 void update_rope(struct rope* rp, float t, bool free) {
@@ -27,7 +27,7 @@ void update_rope(struct rope* rp, float t, bool free) {
 	for (unsigned long i = d; i < particules.size(); ++i)
 	{
 		particle_structure* it = particules[i];
-		float m = it->m * ((i == particules.size()-1) ? 50 :1);
+		float m = it->m * ((i == particules.size()-1) ? 50.0f :1.0f);
 		vec3 fh_spring = { 0,0,0 };
 		vec3 fh_damping = { 0,0,0 };
 		vec3 fd_spring = { 0,0,0 };
@@ -43,15 +43,15 @@ void update_rope(struct rope* rp, float t, bool free) {
 			fd_damping = -mu * (it->v - d->v);
 		}
 		vec3 const f_weight = m * g;
-		vec3 const f = f_weight + fh_spring + fh_damping + fd_spring + fd_damping;
+		vec3 f = f_weight + fh_spring + fh_damping + fd_spring + fd_damping;
 
 		// Numerical Integration (Verlet)
 		{
-			rp->n_speeds[i] = (it->v) + dt * f / m;
+			rp->n_speeds[i] = ((it->v) + dt * f / m);
 			rp->n_positions[i] = it->p + dt * it->v;
 		}
 	}
-	for (unsigned long i = 0; i < particules.size(); i++) {
+	for (unsigned long i = d; i < particules.size(); i++) {
 		particle_structure* it = particules[i];
 		it->p = rp->n_positions[i];
 		it->v = rp->n_speeds[i];
@@ -63,9 +63,13 @@ void update_rope(struct rope* rp, float t, bool free) {
 
 void update_positions(struct rope* rp, float t, particle_structure* surfeur) {
 	update_rope(rp, t, false);
-	float hauteur = evaluate_terrain_bruit((rp->points[rp->N-1]->p.x) / 20 + 0.5f, (rp->points[rp->N - 1]->p.y) / 20 + 0.5f, t, 0.0f).z;
-	if (hauteur + offset > rp->points[rp->N - 1]->p.z) {
-		rp->points[rp->N - 1]->v += vec3(0, 0, (hauteur + offset - rp->points[rp->N - 1]->p.z) / dt);
-		rp->points[rp->N - 1]->p.z = hauteur + offset;
+	float hauteur = evaluate_terrain_bruit(rp->points[rp->N-1]->p, t, 0.0f).z;
+	if (hauteur + offset - rp->points[rp->N - 1]->p.z > 0.1f) {
+		//rp->points[rp->N - 1]->v += vec3(0, 0, 0.5f*(hauteur + offset - rp->points[rp->N - 1]->p.z) / dt);
+		//rp->points[rp->N - 1]->v.z = 0;
+		rp->points[rp->N - 1]->v.x *= 0.8f;
+		rp->points[rp->N - 1]->v.y *= 0.8f;
+		rp->points[rp->N - 1]->v.z += (-50.0f * (hauteur + offset - rp->points[rp->N - 1]->p.z)*g.z*dt);
+		//rp->points[rp->N - 1]->p.z = hauteur + offset;
 	}
 }

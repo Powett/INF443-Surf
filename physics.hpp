@@ -4,7 +4,7 @@
 #pragma once
 
 vcl::vec3 const g = { 0,0,-9.81f }; // gravity
-float const dt = 0.008f;
+float const dt = 0.005f;
 float const dl = 0.01f;
 
 struct particle_structure

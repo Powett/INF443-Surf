@@ -32,7 +32,7 @@ vec3 const interpolation(float t, buffer<vec3> const& key_positions, buffer<floa
     vec3 const& p3 = key_positions[(idx + 2)%N]; // = p_{i+2}
 	
 	//vec3 const p = linear_interpolation(t, t1,t2, p1,p2);
-    vec3 const p = cardinal_spline_interpolation(t, t0, t1,t2, t3, p0, p1,p2, p3, 0.8f);
+    vec3 const p = cardinal_spline_interpolation(t, t0, t1,t2, t3, p0, p1,p2, p3, 0.95f);
     return p;
 }
 
