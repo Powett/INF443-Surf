@@ -7,7 +7,6 @@
 #include "physics.hpp"
 #include <iostream>
 
-//sqdmjkfh
 
 using namespace vcl;
 
@@ -36,7 +35,7 @@ mesh_drawable sphere_keyframe;   // sphere used to display the key positions
 curve_drawable polygon_keyframe; // Display the segment between key positions
 curve_drawable rope_drawable;
 
-mesh_drawable board;
+mesh_drawable voile;
 
 hierarchy_mesh_drawable hierarchy;
 mesh_drawable terrain;
@@ -55,6 +54,7 @@ float feetSpread;
 float thighLength;
 float effectifeThighLength;
 float averageLegLength;
+vec3 toHand;
 
 float waveH = 0.7f;
 float terrain_bruit = 0.1f;
@@ -139,9 +139,9 @@ void initialize_data()
 	// Definition of the initial data
 	//--------------------------------------//
 	// Key positions
-	key_positions = { {0,10,5}, {5,10,5},{-10,1,5}, {-5,-10,5}, {0,10,5}, {5,10,5} };
+	key_positions = { {0,10,4}, {5,10,4},{10,10,4},{10,1,4},{2,0,4}, {-5,-10,4}, {0,10,4}, {5,10,4} };
 	// Key times
-	key_times = { 0.0f, 2.0f, 2.5f, 3.0f, 3.5f, 10.1f };
+	key_times = { 0.0f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f,4.0f, 10.1f };
 	float key_times_max = key_times[key_times.size() - 1];
 
 	for (int i = 0; i < key_positions.size(); i++) {
@@ -157,6 +157,7 @@ void initialize_data()
 	timer.t_min = key_times[0];    // Start the timer at the first time of the keyframe
 	timer.t_max = key_times[N - 2];  // Ends the timer at the last time of the keyframe
 	timer.t = timer.t_min;
+	timer.scale = 0.0f;
 	deltaT = timer.t_max - timer.t_min;
 
 
@@ -170,120 +171,144 @@ void initialize_data()
 
 	polygon_keyframe = curve_drawable(key_positions);
 	polygon_keyframe.color = { 0,0,0 };
-	rp = new struct rope(10, 500.0, 5.0f, 0.1f, { 0,0,10 }, { 10,0,0 });
-	rope_drawable = curve_drawable(rp->n_positions);
-
-	//surfeur = new struct particle_structure(evaluate_terrain(0.5f, 0.5f, 0), {0, 0, 0}, 0.1f);
-
-
-	board = mesh_drawable(create_surfboard(7.0f * bodyHeight, 3.0f * bodyWidth, 0.5f * bodyWidth));
+	
 	thighLength = 0.6f * bodyHeight;
 	averageLegLength = thighLength * 3.0f / 2.0f;
-	//Main body
 
+	shading_parameters_phong* skin = new shading_parameters_phong();
+	skin->color = { 68.0f / 100.0f,59.0f / 100.0f,49.0f / 100.0f };
+	skin->phong.specular = 0.05f;
+	
+	shading_parameters_phong* swimsuit = new shading_parameters_phong();
+	swimsuit->color = { 10.0f / 100.0f,10.0f / 100.0f,70.0f / 100.0f };
+	swimsuit->phong.specular = 0.8f;
 
+	voile = mesh_drawable(create_kite(gScale / 2));
+	voile.transform.rotate = rotation({ 0,1,0 }, pi / 4);
+	voile.shading.phong.specular = 0.0f;
+	voile.shading.alpha = 0.8f;
+	voile.shading.phong.diffuse = 0.9f;
+	voile.shading.color = { 0.9f,0.2,0.2f };
+
+	mesh_drawable stick;
 	
 
-
+	mesh_drawable board = mesh_drawable(create_surfboard(7.0f * bodyHeight, 3.0f * bodyWidth, 0.5f * bodyWidth));
+	board.shading.phong.specular = 0.1f;
+	board.shading.color = { 0.8f,0.3,0.3 };
 	mesh_drawable body = mesh_drawable(mesh_primitive_ellipsoid({ bodyWidth,bodyWidth,bodyHeight }));
+	body.shading = *swimsuit;
 	mesh_drawable head = mesh_drawable(mesh_primitive_sphere(bodyWidth));
-	head.transform.rotate = rotation({ 0,0,1 }, pi / 2);
+	head.transform.rotate = rotation({ 0,0,1 }, pi / 4);
+	head.shading.phong.specular = 0.05f;
 	mesh_drawable knee = mesh_drawable(mesh_primitive_sphere(0.5 * bodyWidth));
+	knee.shading = *skin;
 	mesh_drawable shoulder = mesh_drawable(mesh_primitive_sphere(0.7f * bodyWidth));
+	shoulder.shading = *swimsuit;
 	mesh_drawable hip = mesh_drawable(mesh_primitive_sphere(0.6f * bodyWidth));
+	hip.shading = *swimsuit;
 	mesh_drawable ankle = mesh_drawable(mesh_primitive_sphere(0.4f * bodyWidth));
+	ankle.shading.color = { 0.1f,0.1f,0.1f };
+	ankle.shading.phong.specular = 0.1f;
 	mesh_drawable elbow = mesh_drawable(mesh_primitive_sphere(0.4f * bodyWidth));
-	mesh_drawable thigh = mesh_drawable(mesh_primitive_ellipsoid({ 0.7f*bodyWidth,0.7f*bodyWidth,thighLength/cos(pi/10) }));
-	mesh_drawable leg = mesh_drawable(mesh_primitive_ellipsoid({ 0.6f*bodyWidth,0.6f*bodyWidth,0.6f*bodyHeight }));
-	mesh_drawable arm = mesh_drawable(mesh_primitive_ellipsoid({ 0.5f*bodyWidth,0.5f*bodyWidth,0.5f*bodyHeight }));
-	mesh_drawable forearm = mesh_drawable(mesh_primitive_ellipsoid({ 0.4f*bodyWidth,0.4f*bodyWidth,0.4f*bodyHeight }));
+	elbow.shading = *skin;
+	mesh_drawable thigh = mesh_drawable(mesh_primitive_ellipsoid({ 0.7f * bodyWidth,0.7f * bodyWidth,thighLength / cos(pi / 10) }));
+	thigh.shading = *swimsuit;
+	mesh_drawable leg = mesh_drawable(mesh_primitive_ellipsoid({ 0.6f * bodyWidth,0.6f * bodyWidth,0.6f * bodyHeight }));
+	leg.shading = *skin;
+	mesh_drawable arm = mesh_drawable(mesh_primitive_ellipsoid({ 0.5f * bodyWidth,0.5f * bodyWidth,0.5f * bodyHeight }));
+	arm.shading = *swimsuit;
+	mesh_drawable forearm = mesh_drawable(mesh_primitive_ellipsoid({ 0.4f * bodyWidth,0.4f * bodyWidth,0.45f * bodyHeight }));
+	forearm.shading = *skin;
+	mesh_drawable hand = mesh_drawable(mesh_primitive_sphere(0.4f * bodyWidth));
+	hand.shading = *skin;
 	mesh_drawable foot = mesh_drawable(mesh_primitive_ellipsoid({ 0.4f * bodyWidth,0.4f * bodyWidth,0.4f * bodyHeight }));
+	foot.shading.color = { 0.1f,0.1f,0.1f };
+	foot.shading.phong.specular = 0.1f;
 
 	arm.transform.rotate = rotation({ 0,1,0 }, pi / 2);
 	forearm.transform.rotate = rotation({ 0,1,0 }, pi / 2);
 	foot.transform.rotate = rotation({ 1,0,0 }, pi / 2);
-	head.texture = opengl_texture_to_gpu(image_load_png("../Assets/face.png"),
+	head.texture = opengl_texture_to_gpu(image_load_png("../Assets/test.png"),
 		GL_REPEAT,
 		GL_MIRRORED_REPEAT);
 
 	hierarchy.add(body, "Body");
-	hierarchy.add(head, "Head", "Body", { 0,0,1.4f*bodyHeight });
+	hierarchy.add(head, "Head", "Body", { 0,0,1.4f * bodyHeight });
 
-	hierarchy.add(shoulder, "RShoulder", "Body", { bodyWidth,0,0.6f*bodyHeight });
-	hierarchy.add(shoulder, "LShoulder", "Body", { -bodyWidth,0,0.6f*bodyHeight });
+	hierarchy.add(shoulder, "RShoulder", "Body", { bodyWidth,0,0.6f * bodyHeight });
+	hierarchy.add(shoulder, "LShoulder", "Body", { -bodyWidth,0,0.6f * bodyHeight });
 	hierarchy.add(arm, "RArm", "RShoulder", { 0.6f * bodyHeight,0,0 });
-	hierarchy.add(arm, "LArm", "LShoulder", { -0.6f * bodyHeight,0, 0});
-	hierarchy.add(elbow, "RElbow", "RArm", { 0.5f * bodyHeight,0, 0});
-	hierarchy.add(elbow, "LElbow", "LArm", { -0.5f * bodyHeight,0, 0});
+	hierarchy.add(arm, "LArm", "LShoulder", { -0.6f * bodyHeight,0, 0 });
+	hierarchy.add(elbow, "RElbow", "RArm", { 0.5f * bodyHeight,0, 0 });
+	hierarchy.add(elbow, "LElbow", "LArm", { -0.5f * bodyHeight,0, 0 });
 	hierarchy.add(forearm, "RForearm", "RElbow", { 0.4f * bodyHeight,0,0 });
-	hierarchy.add(forearm, "LForearm", "LElbow", { -0.4f * bodyHeight,0, 0});
+	hierarchy.add(forearm, "LForearm", "LElbow", { -0.4f * bodyHeight,0, 0 });
+	hierarchy.add(hand, "RHand", "RForearm", {0.45f * bodyHeight,0,0 });
+	hierarchy.add(hand, "LHand", "LForearm", { -0.45f * bodyHeight,0,0 });
 
-	
 
-	hierarchy.add(hip, "RHip", "Body", { 0.8f*bodyWidth,0,-0.7f * bodyHeight });
-	hierarchy.add(hip, "LHip", "Body", { -0.8f*bodyWidth,0,-0.7f * bodyHeight });
+	hierarchy.add(hip, "RHip", "Body", { 0.8f * bodyWidth,0,-0.7f * bodyHeight });
+	hierarchy.add(hip, "LHip", "Body", { -0.8f * bodyWidth,0,-0.7f * bodyHeight });
 	thigh.transform.rotate = rotation({ 0,1,0 }, -pi / 10);
-	hierarchy.add(thigh, "RThigh", "RHip", { thighLength * sin(pi / 10),0,-thighLength*cos(pi/10)});
-	thigh.transform.rotate = rotation({ 0,1,0 },pi / 10);
+	hierarchy.add(thigh, "RThigh", "RHip", { thighLength * sin(pi / 10),0,-thighLength * cos(pi / 10) });
+	thigh.transform.rotate = rotation({ 0,1,0 }, pi / 10);
 
-	hierarchy.add(thigh, "LThigh", "LHip", { -thighLength * sin(pi / 10) ,0,- thighLength * cos( pi / 10) });
-	hierarchy.add(knee, "RKnee", "RThigh", { thighLength*sin(pi/10),0,-thighLength*cos(pi/10) });
+	hierarchy.add(thigh, "LThigh", "LHip", { -thighLength * sin(pi / 10) ,0,-thighLength * cos(pi / 10) });
+	hierarchy.add(knee, "RKnee", "RThigh", { thighLength * sin(pi / 10),0,-thighLength * cos(pi / 10) });
 	hierarchy.add(knee, "LKnee", "LThigh", { -thighLength * sin(pi / 10),0,-thighLength * cos(pi / 10) });
 	hierarchy.add(leg, "LLeg", "LKnee", { 0,0,-0.6f * bodyHeight });
 	hierarchy.add(leg, "RLeg", "RKnee", { 0,0,-0.6f * bodyHeight });
 	hierarchy.add(ankle, "RAnkle", "RLeg", { 0, 0,-0.6 * bodyHeight });
 	hierarchy.add(ankle, "LAnkle", "LLeg", { 0, 0,-0.6 * bodyHeight });
-	hierarchy.add(foot, "RFoot", "RAnkle", {0, 0.3f*bodyHeight,0});
-	hierarchy.add(foot, "LFoot", "LAnkle", {0, 0.3f*bodyHeight,0});
-	board.transform.rotate = rotation{ {0,0,1}, -pi/2 };
-	hierarchy.add(board, "Board", "RFoot", { 0.8f * bodyWidth,0,+0.1f*bodyWidth});
+	hierarchy.add(foot, "RFoot", "RAnkle", { 0, 0.3f * bodyHeight,0 });
+	hierarchy.add(foot, "LFoot", "LAnkle", { 0, 0.3f * bodyHeight,0 });
+	board.transform.rotate = rotation{ {0,0,1}, -pi / 2 };
+	board.transform.translate = { -0.8f * bodyWidth ,0,-0.2f * bodyWidth };
+	hierarchy.add(board, "Board", "RFoot", { 0,0,0 });
+
+	hierarchy["LShoulder"].transform.rotate = rotation({ 0,0,1 }, -pi / 2 - pi / 8);
+	hierarchy["LElbow"].transform.rotate = rotation({ 0,0,1 }, -pi / 2 + pi / 8);
+	hierarchy["RShoulder"].transform.rotate = rotation({ 0,0,1 }, -pi / 5);
+	hierarchy["RElbow"].transform.rotate = rotation({ 0,0,1 }, 4 * pi / 5);
+	hierarchy["RHand"].transform.rotate=rotation({ 0,0,1 }, -3*pi/5);
 	hierarchy.update_local_to_global_coordinates();
 
+	stick = mesh_drawable(mesh_primitive_cylinder(0.2f * bodyWidth,  hierarchy["LHand"].global_transform.translate - hierarchy["RHand"].global_transform.translate, { 0,0,0 }));
+	stick.shading.phong.specular = 0.0f;
+	stick.shading.color = { 0.1,0.1,0.1 };
+	hierarchy.add(stick, "Stick", "RHand");
+
+
 	feetSpread = std::abs((hierarchy["RFoot"].global_transform.translate - hierarchy["LFoot"].global_transform.translate).x);
-	effectifeThighLength = (hierarchy["LHip"].global_transform.translate - hierarchy["LKnee"].global_transform.translate).z/2;
+	effectifeThighLength = (hierarchy["LHip"].global_transform.translate - hierarchy["LKnee"].global_transform.translate).z / 2;
+	
+
 	terrain = mesh_drawable(create_terrain_bruit(0, terrain_bruit));
 	terrain.shading.phong.specular = 0.2f;
 	terrain.shading.alpha = 0.2f;
-	terrain.shading.color = { 0.5f,0.5f,0.95f } ;
+	terrain.shading.color = { 0.5f,0.5f,0.95f };
 
 	vagues = mesh_drawable(create_terrain_bruit(0, vagues_bruit));
 	vagues.shading.phong.specular = 0.0f;
-	/*terrain.shading.phong.diffuse = 0.8f;*/
 	terrain.shading.phong.ambient = 0.8f;
 	vagues.shading.alpha = 0.8f;
 	vagues.shading.color = { 0,0,1.0f };
+	rp = new struct rope(15, 1000.0f, 15.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f) );
 }
 
 
 
 void display_frame()
 {
-		
-	/***
+
+
 	// Sanity check
 	assert_vcl(key_times.size() == key_positions.size(), "key_time and key_positions should have the same size");
 
-	// Update the current time
-	
 
-	//update_hfixed_rope(rp, t);
-	// Display the key positions
-	if (user.gui.display_keyposition)
-		display_keypositions(sphere_keyframe, key_positions, scene);
 
-	// Display the polygon linking the key positions
-	if (user.gui.display_polygon)
-		draw(polygon_keyframe, scene);
 
-	// Compute the interpolated position
-	vec3 const p = interpolation(t, key_positions, key_times);
-	vec3 const p_tdt = interpolation(t + dt, key_positions, key_times);
-	vec3 const deltaP = p_tdt - p;
-	***/
-	
-	/** *************************************************************  **/
-	/** Compute the (animated) transformations applied to the elements **/
-	/** *************************************************************  **/
 
 	timer.update();
 	float const t = timer.t;
@@ -294,100 +319,111 @@ void display_frame()
 		recalcterrain = 0;
 	}
 
-	float x = 1.f * cos(2 * pi * t);
-	float y = 1.f * sin(2 * pi * t);
-	float x2 = 1.f * cos(2 * pi *( t+dt));
-	float y2 = 1.f * sin(2 * pi * (t + dt));
-	vec3 p = evaluate_terrain_bruit({ x,y,0 }, t, physics_bruit);
-	vec3 dp = (evaluate_terrain_bruit({ x2,y2,0 }, t + dt, physics_bruit) - p);
-	vec3 unit_direction = dp / norm(dp);
+	vec3 const voile_p = interpolation(t, key_positions, key_times);
+	vec3 const voile_p_tdt = interpolation(t + dt, key_positions, key_times);
+	vec3 const voile_dp = voile_p_tdt - voile_p;
 
-	vec3 normal_direction = { unit_direction.y, -unit_direction.x,0 };
-
-	
-	vec3 nose = evaluate_terrain_bruit(p + unit_direction * dl, t, physics_bruit);
-	vec3 tail = evaluate_terrain_bruit(p - unit_direction * dl, t, physics_bruit);
-	vec3 front = evaluate_terrain_bruit(p + normal_direction * dl, t, physics_bruit);
-	vec3 back = evaluate_terrain_bruit(p - normal_direction * dl, t, physics_bruit);
-
-
-	rp->points[0]->p = { x,y,10 };
-	rp->points[0]->v = dp/dt;
-	rp->n_positions[0] = { x2,y2,10 };
-	rp->n_speeds[0] = dp / dt;
 	update_positions(rp, t, surfeur);
-	//update_rope(rp, t, false);
-	rope_drawable = curve_drawable(rp->n_positions);
-	
-	p = rp->n_positions[rp->N - 1] * dt;
-	dp = rp->n_speeds[rp->N - 1]*dt;
+	rp->points[0]->p = voile_p;
+	rp->points[0]->v = voile_dp / dt;
+	rp->n_positions[0] = voile_p;
+	rp->n_speeds[0] = voile_dp / dt;
+	voile.transform.translate = voile_p;
+	voile.transform.rotate = rotation({ 0,0,1 }, std::atan2(voile_dp.y, voile_dp.x)) * rotation({ 0,1,0 }, (pi / 50) * norm(voile_dp / dt));
 
-	float yaw = std::atan2(dp.y, dp.x);
-	hierarchy["Body"].transform.translate = rp->points[rp->N -1]->p;
+	toHand = (hierarchy["RHand"].global_transform.translate+ hierarchy["LHand"].global_transform.translate)/2 - rp->n_positions[rp->N -1];
+
+	rp->n_positions[rp->N - 1] += toHand;
+	rope_drawable = curve_drawable(rp->n_positions);
+	rp->n_positions[rp->N - 1] -= toHand;
+
+	vec3 surfeur_p = rp->n_positions[rp->N - 1];
+	vec3 surfeur_dp = rp->n_speeds[rp->N - 1] * dt;
+
+	float yaw = std::atan2(surfeur_dp.y, surfeur_dp.x);
+	hierarchy["Body"].transform.translate = surfeur_p;
 	hierarchy["Body"].transform.rotate = rotation({ 0,0,1 }, yaw);
 	hierarchy.update_local_to_global_coordinates();
 
 	vec3 frontFoot = hierarchy["RFoot"].global_transform.translate;
 	vec3 backFoot = hierarchy["LFoot"].global_transform.translate;
 	float deltaH = (evaluate_terrain_bruit(frontFoot, t, physics_bruit) - evaluate_terrain_bruit(backFoot, t, physics_bruit)).z;
-	float pitch = atan2(deltaH, feetSpread);
-	//hierarchy["Board"].transform.translate = vec3(0, 0, +0.1f * bodyWidth) + (-hierarchy["RFoot"].global_transform.translate + hierarchy["LFoot"].global_transform.translate) / 2;
-	hierarchy["Board"].transform.rotate = rotation({ 0,1,0 }, -pitch);
-	hierarchy.update_local_to_global_coordinates();
 
-	float roll = atan2(deltaH, feetSpread);
-	float arg = averageLegLength / (2* thighLength) - deltaH / (4*thighLength);
+	float arg = averageLegLength / (2 * thighLength) - deltaH / (4 * thighLength);
 	arg = (arg >= -1.0f) ? ((arg <= 1.0f) ? arg : 1.0f) : -1.0f;
 	float alpha = acos(arg);
-	float beta =-2*alpha;
+	float beta = -2 * alpha;
 	hierarchy["RHip"].transform.rotate = rotation({ 1,0,0 }, alpha);
 	hierarchy["RKnee"].transform.rotate = rotation({ 1,0,0 }, beta);
-	hierarchy["RAnkle"].transform.rotate = rotation({ 1,0,0 }, (-beta/2) );
+	hierarchy["RAnkle"].transform.rotate = rotation({ 1,0,0 }, -beta / 2);
 
-	arg = averageLegLength / (2*thighLength) + deltaH / (4*thighLength);
+	arg = averageLegLength / (2 * thighLength) + deltaH / (4 * thighLength);
 	arg = (arg >= -1.0f) ? ((arg <= 1.0f) ? arg : 1.0f) : -1.0f;
 	alpha = acos(arg);
 	beta = -2 * alpha;
 	hierarchy["LHip"].transform.rotate = rotation({ 1,0,0 }, alpha);
 	hierarchy["LKnee"].transform.rotate = rotation({ 1,0,0 }, beta);
-	hierarchy["LAnkle"].transform.rotate = rotation({ 1,0,0 }, -beta/2);
+	hierarchy["LAnkle"].transform.rotate = rotation({ 1,0,0 }, -beta / 2);
 	hierarchy.update_local_to_global_coordinates();
 
-	hierarchy["Body"].transform.translate = { 0,0,0 };
+	frontFoot = hierarchy["RFoot"].global_transform.translate;
+	backFoot = hierarchy["LFoot"].global_transform.translate;
+	float pitch = asin((frontFoot - backFoot).z / norm(frontFoot - backFoot));
+	hierarchy["Board"].transform.rotate = rotation({ 0,1,0 }, -pitch);
+	hierarchy.update_local_to_global_coordinates();
+
+
+	/*hierarchy["Body"].transform.translate = { 0,0,0 };
 	hierarchy["Body"].transform.rotate = rotation();
-	hierarchy.update_local_to_global_coordinates();
-	/*scene.camera.distance_to_center = 2.5f;
-	scene.camera.look_at(vec3({0, 0, 2.0f}), p, { 0,0,1 });*/
-
-
-	draw(hierarchy, scene);
-	//draw(test_sphere, scene);
-	draw(rope_drawable, scene);
-	for (vec3 x : rp->n_positions) {
-		test_sphere.transform.translate = x;
-		draw(test_sphere, scene);
-	}
+	hierarchy.update_local_to_global_coordinates();*/
 	
+	if (user.gui.fixed_camera) {
+		scene.camera.look_at((2 * voile_p - 1 * surfeur_p) + vec3(0, 0, 3), surfeur_p, { 0,0,1 });
+	}
+
+
+	//draw(test_sphere, scene);
+
+	draw(rope_drawable, scene);
+	draw(hierarchy, scene);
+	
+	if (user.gui.display_keyposition) {
+		display_keypositions(sphere_keyframe, key_positions, scene);
+		for (vec3 x : rp->n_positions) {
+			test_sphere.transform.translate = x;
+			draw(test_sphere, scene);
+		}
+	}
+
 	if (user.gui.display_surface) {
 		draw(terrain, scene);
 		draw(vagues, scene);
+		draw(voile, scene);
 	}
 	if (user.gui.display_wireframe) {
 		draw_wireframe(hierarchy, scene);
 		draw_wireframe(terrain, scene);
 	}
-
-
+	
+	/*hierarchy["Body"].transform.translate = { 0,0,0 };
+	hierarchy["LShoulder"].transform.rotate = rotation();
+	hierarchy["LElbow"].transform.rotate = rotation();
+	hierarchy["RShoulder"].transform.rotate = rotation();
+	hierarchy["RElbow"].transform.rotate = rotation();
+	hierarchy["RHand"].transform.rotate = rotation({ 0,0,1 }, -3*pi/5);
+	hierarchy["Head"].transform.rotate = rotation({ 0,0,1 }, pi / 4);
+	hierarchy.update_local_to_global_coordinates();
+	draw(hierarchy, scene);*/
 }
 
 void display_interface()
 {
 	ImGui::SliderFloat("Time", &timer.t, timer.t_min, timer.t_max);
-	ImGui::SliderFloat("Time scale", &timer.scale, 0.0f, 2.0f);
+	ImGui::SliderFloat("Time scale", &timer.scale, 0.0f, 1.0f);
 	ImGui::SliderFloat("Waves Height", &waveH, 0.0f, 2.0f);
 	ImGui::Checkbox("Frame", &user.gui.display_frame);
 	ImGui::Checkbox("Display key positions", &user.gui.display_keyposition);
-	ImGui::Checkbox("Display polygon", &user.gui.display_polygon);
+	ImGui::Checkbox("Fixed camera", &user.gui.fixed_camera);
 	ImGui::Checkbox("Surface", &user.gui.display_surface);
 	ImGui::Checkbox("Wireframe", &user.gui.display_wireframe);
 }

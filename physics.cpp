@@ -27,7 +27,7 @@ void update_rope(struct rope* rp, float t, bool free) {
 	for (unsigned long i = d; i < particules.size(); ++i)
 	{
 		particle_structure* it = particules[i];
-		float m = it->m * ((i == particules.size() - 1) ? 50.0f : 1.0f);
+		float m = it->m * ((i == particules.size() - 1) ? 100.0f : 1.0f);
 		vec3 fh_spring = { 0,0,0 };
 		vec3 fh_damping = { 0,0,0 };
 		vec3 fd_spring = { 0,0,0 };
@@ -45,9 +45,11 @@ void update_rope(struct rope* rp, float t, bool free) {
 		}
 		else {
 			float hauteur = evaluate_terrain_bruit(it->p, t, 0.0f).z;
-			if (hauteur + offset - it->p.z > 0.5f) {
-				f+=(-50.0f * (hauteur + offset - it->p.z) * g);
-				f += -0.8f * it->v;
+			if (it->p.z - offset -hauteur< 0.1f) {
+				f+=(-50.0f * pow((hauteur + offset - it->p.z),2) * g);
+			}
+			if (it->p.z - offset - hauteur < 0.5f) {
+				f.z += -0.4f * it->v.z;
 			}
 		}
 		vec3 const f_weight = m * g;
