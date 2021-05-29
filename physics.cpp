@@ -32,6 +32,7 @@ void update_rope(struct rope* rp, float t, bool free) {
 		vec3 fh_damping = { 0,0,0 };
 		vec3 fd_spring = { 0,0,0 };
 		vec3 fd_damping = { 0,0,0 };
+		vec3 f = { 0,0,0 };
 		if (i > 0) {
 			particle_structure* h = particules[i - 1];
 			fh_spring = spring_force(it->p, h->p, L0, K);
@@ -42,8 +43,15 @@ void update_rope(struct rope* rp, float t, bool free) {
 			fd_spring = spring_force(it->p, d->p, L0, K);
 			fd_damping = -mu * (it->v - d->v);
 		}
+		else {
+			float hauteur = evaluate_terrain_bruit(it->p, t, 0.0f).z;
+			if (hauteur + offset - it->p.z > 0.5f) {
+				f+=(-50.0f * (hauteur + offset - it->p.z) * g);
+				f += -0.8f * it->v;
+			}
+		}
 		vec3 const f_weight = m * g;
-		vec3 f = f_weight + fh_spring + fh_damping + fd_spring + fd_damping;
+		f += f_weight + fh_spring + fh_damping + fd_spring + fd_damping;
 
 		// Numerical Integration (Verlet)
 		{
@@ -63,13 +71,13 @@ void update_rope(struct rope* rp, float t, bool free) {
 
 void update_positions(struct rope* rp, float t, particle_structure* surfeur) {
 	update_rope(rp, t, false);
-	float hauteur = evaluate_terrain_bruit(rp->points[rp->N - 1]->p, t, 0.0f).z;
-	if (hauteur + offset - rp->points[rp->N - 1]->p.z > 0.1f) {
-		//rp->points[rp->N - 1]->v += vec3(0, 0, 0.5f*(hauteur + offset - rp->points[rp->N - 1]->p.z) / dt);
-		//rp->points[rp->N - 1]->v.z = 0;
-		rp->points[rp->N - 1]->v.x *= 0.8f;
-		rp->points[rp->N - 1]->v.y *= 0.8f;
-		rp->points[rp->N - 1]->v.z += (-50.0f * (hauteur + offset - rp->points[rp->N - 1]->p.z) * g.z * dt);
-		//rp->points[rp->N - 1]->p.z = hauteur + offset;
-	}
+	//float hauteur = evaluate_terrain_bruit(rp->points[rp->N - 1]->p, t, 0.0f).z;
+	//if (hauteur + offset - rp->points[rp->N - 1]->p.z > 0.1f) {
+	//	rp->points[rp->N - 1]->v += vec3(0, 0, 0.5f*(hauteur + offset - rp->points[rp->N - 1]->p.z) / dt);
+	//	//rp->points[rp->N - 1]->v.z = 0;
+	//	rp->points[rp->N - 1]->v.x *= 0.8f;
+	//	rp->points[rp->N - 1]->v.y *= 0.8f;
+	//	//rp->points[rp->N - 1]->v.z = (-10.0f * (hauteur + offset - rp->points[rp->N - 1]->p.z) * g.z * dt);
+	//	//rp->points[rp->N - 1]->p.z = hauteur + offset;
+	//}
 }
