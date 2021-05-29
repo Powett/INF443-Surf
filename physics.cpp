@@ -27,18 +27,18 @@ void update_rope(struct rope* rp, float t, bool free) {
 	for (unsigned long i = d; i < particules.size(); ++i)
 	{
 		particle_structure* it = particules[i];
-		float m = it->m * ((i == particules.size()-1) ? 50.0f :1.0f);
+		float m = it->m * ((i == particules.size() - 1) ? 50.0f : 1.0f);
 		vec3 fh_spring = { 0,0,0 };
 		vec3 fh_damping = { 0,0,0 };
 		vec3 fd_spring = { 0,0,0 };
 		vec3 fd_damping = { 0,0,0 };
 		if (i > 0) {
-			particle_structure* h = particules[i-1];
+			particle_structure* h = particules[i - 1];
 			fh_spring = spring_force(it->p, h->p, L0, K);
 			fh_damping = -mu * (it->v - h->v);
 		}
-		if (i < particules.size()-1) {
-			particle_structure* d = particules[i+1];
+		if (i < particules.size() - 1) {
+			particle_structure* d = particules[i + 1];
 			fd_spring = spring_force(it->p, d->p, L0, K);
 			fd_damping = -mu * (it->v - d->v);
 		}
@@ -63,13 +63,13 @@ void update_rope(struct rope* rp, float t, bool free) {
 
 void update_positions(struct rope* rp, float t, particle_structure* surfeur) {
 	update_rope(rp, t, false);
-	float hauteur = evaluate_terrain_bruit(rp->points[rp->N-1]->p, t, 0.0f).z;
+	float hauteur = evaluate_terrain_bruit(rp->points[rp->N - 1]->p, t, 0.0f).z;
 	if (hauteur + offset - rp->points[rp->N - 1]->p.z > 0.1f) {
 		//rp->points[rp->N - 1]->v += vec3(0, 0, 0.5f*(hauteur + offset - rp->points[rp->N - 1]->p.z) / dt);
 		//rp->points[rp->N - 1]->v.z = 0;
 		rp->points[rp->N - 1]->v.x *= 0.8f;
 		rp->points[rp->N - 1]->v.y *= 0.8f;
-		rp->points[rp->N - 1]->v.z += (-50.0f * (hauteur + offset - rp->points[rp->N - 1]->p.z)*g.z*dt);
+		rp->points[rp->N - 1]->v.z += (-50.0f * (hauteur + offset - rp->points[rp->N - 1]->p.z) * g.z * dt);
 		//rp->points[rp->N - 1]->p.z = hauteur + offset;
 	}
 }

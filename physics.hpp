@@ -33,9 +33,9 @@ struct rope {
 		this->K = K;
 		this->mu = mu;
 		this->m = m;
-		this->L0 = norm((pf-p0))/N;
+		this->L0 = norm((pf - p0)) / N;
 		for (int i = 0; i < N; i++) {
-			points.push_back(new particle_structure(p0+i*(pf-p0)/N, { 0,0,0 }, m));
+			points.push_back(new particle_structure(p0 + i * (pf - p0) / N, { 0,0,0 }, m));
 			n_positions.push_back(p0 + i * (pf - p0) / N);
 			n_speeds.push_back({ 0,0,0 });
 		}
