@@ -312,6 +312,7 @@ void display_frame()
 
 	timer.update();
 	float const t = timer.t;
+	//recalculate the waves position starting with the second frame
 	recalcterrain++;
 	if (recalcterrain > 1) {
 		terrain.update_position(update_terrain(waveH, t, terrain_bruit));
@@ -319,15 +320,21 @@ void display_frame()
 		recalcterrain = 0;
 	}
 
+
+	//interpolated position and speed for the kite
 	vec3 const voile_p = interpolation(t, key_positions, key_times);
 	vec3 const voile_p_tdt = interpolation(t + dt, key_positions, key_times);
 	vec3 const voile_dp = voile_p_tdt - voile_p;
 
-	update_positions(rp, t, surfeur);
+
+	//physics update
+	update_rope(rp, t, false);
 	rp->points[0]->p = voile_p;
 	rp->points[0]->v = voile_dp / dt;
 	rp->n_positions[0] = voile_p;
 	rp->n_speeds[0] = voile_dp / dt;
+	
+	//set the kite position and orientation
 	voile.transform.translate = voile_p;
 	voile.transform.rotate = rotation({ 0,0,1 }, std::atan2(voile_dp.y, voile_dp.x)) * rotation({ 0,1,0 }, (pi / 50) * norm(voile_dp / dt));
 
@@ -340,6 +347,8 @@ void display_frame()
 	vec3 surfeur_p = rp->n_positions[rp->N - 1];
 	vec3 surfeur_dp = rp->n_speeds[rp->N - 1] * dt;
 
+
+	//update the hierarchy of the surfer according to the movement
 	float yaw = std::atan2(surfeur_dp.y, surfeur_dp.x);
 	hierarchy["Body"].transform.translate = surfeur_p;
 	hierarchy["Body"].transform.rotate = rotation({ 0,0,1 }, yaw);
@@ -372,18 +381,14 @@ void display_frame()
 	hierarchy["Board"].transform.rotate = rotation({ 0,1,0 }, -pitch);
 	hierarchy.update_local_to_global_coordinates();
 
-
-	/*hierarchy["Body"].transform.translate = { 0,0,0 };
-	hierarchy["Body"].transform.rotate = rotation();
-	hierarchy.update_local_to_global_coordinates();*/
 	
 	if (user.gui.fixed_camera) {
 		scene.camera.look_at((2 * voile_p - 1 * surfeur_p) + vec3(0, 0, 3), surfeur_p, { 0,0,1 });
 	}
 
 
-	//draw(test_sphere, scene);
 
+	//display everything
 	draw(rope_drawable, scene);
 	draw(hierarchy, scene);
 	
@@ -404,22 +409,12 @@ void display_frame()
 		draw_wireframe(hierarchy, scene);
 		draw_wireframe(terrain, scene);
 	}
-	
-	/*hierarchy["Body"].transform.translate = { 0,0,0 };
-	hierarchy["LShoulder"].transform.rotate = rotation();
-	hierarchy["LElbow"].transform.rotate = rotation();
-	hierarchy["RShoulder"].transform.rotate = rotation();
-	hierarchy["RElbow"].transform.rotate = rotation();
-	hierarchy["RHand"].transform.rotate = rotation({ 0,0,1 }, -3*pi/5);
-	hierarchy["Head"].transform.rotate = rotation({ 0,0,1 }, pi / 4);
-	hierarchy.update_local_to_global_coordinates();
-	draw(hierarchy, scene);*/
 }
 
 void display_interface()
 {
 	ImGui::SliderFloat("Time", &timer.t, timer.t_min, timer.t_max);
-	ImGui::SliderFloat("Time scale", &timer.scale, 0.0f, 1.0f);
+	ImGui::SliderFloat("Time scale", &timer.scale, 0.0f, 0.1f);
 	ImGui::SliderFloat("Waves Height", &waveH, 0.0f, 2.0f);
 	ImGui::Checkbox("Frame", &user.gui.display_frame);
 	ImGui::Checkbox("Display key positions", &user.gui.display_keyposition);

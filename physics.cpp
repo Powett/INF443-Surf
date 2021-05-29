@@ -18,11 +18,10 @@ vec3 spring_force(vec3 const& p_i, vec3 const& p_j, float L_0, float K)
 
 void update_rope(struct rope* rp, float t, bool free) {
 	std::vector<particle_structure* > particules = rp->points;
-	//std::vector<vec3> n_positions = rp.n_positions;
-	/*std::vector<vec3> n_speeds = rp.n_speeds;*/
 	float mu = rp->mu;
 	float K = rp->K;
 	float L0 = rp->L0;
+	//if the rope isn't free we don't update the first particle of the rope and start from i=1
 	int const d = free ? 0 : 1;
 	for (unsigned long i = d; i < particules.size(); ++i)
 	{
@@ -33,16 +32,19 @@ void update_rope(struct rope* rp, float t, bool free) {
 		vec3 fd_spring = { 0,0,0 };
 		vec3 fd_damping = { 0,0,0 };
 		vec3 f = { 0,0,0 };
+		//calculate the force by the particle in position i-1
 		if (i > 0) {
 			particle_structure* h = particules[i - 1];
 			fh_spring = spring_force(it->p, h->p, L0, K);
 			fh_damping = -mu * (it->v - h->v);
 		}
+		//calculate the force by the particle in position i+1
 		if (i < particules.size() - 1) {
 			particle_structure* d = particules[i + 1];
 			fd_spring = spring_force(it->p, d->p, L0, K);
 			fd_damping = -mu * (it->v - d->v);
 		}
+		//the last particle is the surfer, he interacts with water
 		else {
 			float hauteur = evaluate_terrain_bruit(it->p, t, 0.0f).z;
 			if (it->p.z - offset -hauteur< 0.1f) {
@@ -68,18 +70,3 @@ void update_rope(struct rope* rp, float t, bool free) {
 	}
 }
 
-
-
-
-void update_positions(struct rope* rp, float t, particle_structure* surfeur) {
-	update_rope(rp, t, false);
-	//float hauteur = evaluate_terrain_bruit(rp->points[rp->N - 1]->p, t, 0.0f).z;
-	//if (hauteur + offset - rp->points[rp->N - 1]->p.z > 0.1f) {
-	//	rp->points[rp->N - 1]->v += vec3(0, 0, 0.5f*(hauteur + offset - rp->points[rp->N - 1]->p.z) / dt);
-	//	//rp->points[rp->N - 1]->v.z = 0;
-	//	rp->points[rp->N - 1]->v.x *= 0.8f;
-	//	rp->points[rp->N - 1]->v.y *= 0.8f;
-	//	//rp->points[rp->N - 1]->v.z = (-10.0f * (hauteur + offset - rp->points[rp->N - 1]->p.z) * g.z * dt);
-	//	//rp->points[rp->N - 1]->p.z = hauteur + offset;
-	//}
-}
