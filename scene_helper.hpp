@@ -20,10 +20,8 @@ struct gui_parameters {
 	bool display_surface = true;
 	bool display_wireframe = false;
 	bool display_frame = false;
-	bool display_polygon = false;
+	bool fixed_camera = false;
 	bool display_keyposition = true;
-	bool display_trajectory = false;
-	int trajectory_storage = 0;
 };
 
 struct user_interaction_parameters {
