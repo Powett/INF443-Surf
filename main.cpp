@@ -139,7 +139,7 @@ void initialize_data()
 	// Definition of the initial data
 	//--------------------------------------//
 	// Key positions
-	key_positions = { {0,10,4}, {5,10,4},{10,10,4},{10,1,4},{2,0,4}, {-5,-10,4}, {0,10,4}, {5,10,4} };
+	key_positions = { {0,10,10}, {5,10,10},{10,10,10},{10,1,10},{2,0,10}, {-5,-10,10}, {0,10,10}, {5,10,10} };
 	// Key times
 	key_times = { 0.0f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f,4.0f, 10.1f };
 	float key_times_max = key_times[key_times.size() - 1];
@@ -294,7 +294,7 @@ void initialize_data()
 	terrain.shading.phong.ambient = 0.8f;
 	vagues.shading.alpha = 0.8f;
 	vagues.shading.color = { 0,0,1.0f };
-	rp = new struct rope(15, 1000.0f, 15.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f) );
+	rp = new struct rope(2, 10.0f, 15.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f) - vec3(0,0,8.0f) );
 }
 
 
