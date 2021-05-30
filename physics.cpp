@@ -44,16 +44,7 @@ void update_rope(struct rope* rp, float t, bool free) {
 			fd_spring = spring_force(it->p, d->p, L0, K);
 			fd_damping = -mu * (it->v - d->v);
 		}
-		//the last particle is the surfer, he interacts with water
-		else {
-			float hauteur = evaluate_terrain_bruit(it->p, t, 0.0f).z;
-			if (it->p.z - offset -hauteur< 0.1f) {
-				f+=(-50.0f * pow((hauteur + offset - it->p.z),2) * g);
-			}
-			if (it->p.z - offset - hauteur < 0.5f) {
-				f.z += -0.4f * it->v.z;
-			}
-		}
+
 		vec3 const f_weight = m * g;
 		f += f_weight + fh_spring + fh_damping + fd_spring + fd_damping;
 
@@ -61,6 +52,12 @@ void update_rope(struct rope* rp, float t, bool free) {
 		{
 			rp->n_speeds[i] = ((it->v) + dt * f / m);
 			rp->n_positions[i] = it->p + dt * it->v;
+			float hauteur = evaluate_terrain_bruit(it->p, t, 0.0f).z;
+			//The las particle of the rope is the surfer, he doesn't sink into the water. We update his position and speed accordingly
+			if ( (i == particules.size() - 1) && (rp->n_positions[i].z - offset - hauteur < 0) ) {
+				rp->n_speeds[i].z += (offset + hauteur - rp->n_positions[i].z)/dt;
+				rp->n_positions[i].z = offset + hauteur;
+			}
 		}
 	}
 	for (unsigned long i = d; i < particules.size(); i++) {
@@ -70,11 +67,12 @@ void update_rope(struct rope* rp, float t, bool free) {
 	}
 }
 
+//The rope used for the physics calculations is only one segment, we render a more natural rope by using the calculated points as reference.
 void update_display_rope(struct rope* rp, vec3 A, vec3 B) {
 	float size = rp->points.size();
 	for (float i = 0; i < size; ++i) {
 		 float const u = i / (size - 1);
-		 rp->n_positions[i] = vec3(u * A.x + (1 - u) * B.x, u * A.y + (1 - u) * B.y, u * A.z + (1 - u) * B.z + 10 * u * (u-1));
+		 rp->n_positions[i] = vec3(u * A.x + (1 - u) * B.x, u * A.y + (1 - u) * B.y, u * A.z + (1 - u) * B.z + 5 * u * (u-1));
 		 rp->points[i]->p = rp->n_positions[i];
 	}
 }
