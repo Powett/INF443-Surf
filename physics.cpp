@@ -70,3 +70,11 @@ void update_rope(struct rope* rp, float t, bool free) {
 	}
 }
 
+void update_display_rope(struct rope* rp, vec3 A, vec3 B) {
+	float size = rp->points.size();
+	for (float i = 0; i < size; ++i) {
+		 float const u = i / (size - 1);
+		 rp->n_positions[i] = vec3(u * A.x + (1 - u) * B.x, u * A.y + (1 - u) * B.y, u * A.z + (1 - u) * B.z + 10 * u * (u-1));
+		 rp->points[i]->p = rp->n_positions[i];
+	}
+}

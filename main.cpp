@@ -42,6 +42,7 @@ mesh_drawable terrain;
 mesh_drawable vagues;
 mesh_drawable test_sphere;
 struct rope* rp;
+struct rope* display_rope;
 struct particle_structure* surfeur;
 
 float bigRadius = 10.0f;
@@ -295,6 +296,7 @@ void initialize_data()
 	vagues.shading.alpha = 0.8f;
 	vagues.shading.color = { 0,0,1.0f };
 	rp = new struct rope(2, 10.0f, 15.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f) - vec3(0,0,8.0f) );
+	display_rope = new struct rope(15, 10.0f, 15.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f) - vec3(0, 0, 8.0f));
 }
 
 
@@ -329,6 +331,7 @@ void display_frame()
 
 	//physics update
 	update_rope(rp, t, false);
+	update_display_rope(display_rope, rp->points[0]->p, rp->points[1]->p);
 	rp->points[0]->p = voile_p;
 	rp->points[0]->v = voile_dp / dt;
 	rp->n_positions[0] = voile_p;
@@ -341,7 +344,7 @@ void display_frame()
 	toHand = (hierarchy["RHand"].global_transform.translate+ hierarchy["LHand"].global_transform.translate)/2 - rp->n_positions[rp->N -1];
 
 	rp->n_positions[rp->N - 1] += toHand;
-	rope_drawable = curve_drawable(rp->n_positions);
+	rope_drawable = curve_drawable(display_rope->n_positions);
 	rp->n_positions[rp->N - 1] -= toHand;
 
 	vec3 surfeur_p = rp->n_positions[rp->N - 1];
@@ -391,6 +394,11 @@ void display_frame()
 	//display everything
 	draw(rope_drawable, scene);
 	draw(hierarchy, scene);
+
+	for (vec3 x : display_rope->n_positions) {
+		test_sphere.transform.translate = x;
+		draw(test_sphere, scene);
+	}
 	
 	if (user.gui.display_keyposition) {
 		display_keypositions(sphere_keyframe, key_positions, scene);
@@ -414,7 +422,7 @@ void display_frame()
 void display_interface()
 {
 	ImGui::SliderFloat("Time", &timer.t, timer.t_min, timer.t_max);
-	ImGui::SliderFloat("Time scale", &timer.scale, 0.0f, 0.1f);
+	ImGui::SliderFloat("Time scale", &timer.scale, 0.0f, 1.0f);
 	ImGui::SliderFloat("Waves Height", &waveH, 0.0f, 2.0f);
 	ImGui::Checkbox("Frame", &user.gui.display_frame);
 	ImGui::Checkbox("Display key positions", &user.gui.display_keyposition);
