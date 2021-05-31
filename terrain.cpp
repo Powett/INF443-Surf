@@ -11,11 +11,12 @@ std::vector<float> h = { 2.f, 4.f, 5.0f, 2.f }; // Amplitude à l'origine
 std::vector<float> d0 = { 25.0f, 25.0f, 25.0f, 25.0f }; // Pseudo-période spatiale
 std::vector<float> d1 = { 15.f, 15.f, 15.f, 15.f }; // Longueur caractéristique d'atténuation
 float vit = 5.0f; // vitesse de phase
+float map_size = 30.0f;
 
 const unsigned int N = 200;
 
 vec3 uvToVec(float u, float v) {
-    return { 20 * (u - 0.5f),20 * (v - 0.5f),0 };
+    return { map_size * (u - 0.5f),map_size * (v - 0.5f),0 };
 }
 
 
@@ -32,12 +33,12 @@ vec3 evaluate_terrain_bruit(float u, float v, float t, float bruit)
         d = 0;
         d = norm(vec2(x, y) - p[i]);
         z += waveHeight * h[i] * std::exp(-d / d0[i]) * std::cos(2 * pi * (d / d1[i] - vit * t / d1[i]));
-        z += waveHeight * bruit * (1 - 0.9f * noise_perlin({ u, v - vit * t / 40 }, 5, 0.6f, 5.0f));
+        z += waveHeight * bruit * (1 - 0.9f * noise_perlin({ u, v - vit * t / (2*map_size) }, 5, 0.6f, 5.0f));
     }
     return { x,y,z };
 }
 vec3 evaluate_terrain_bruit(vec3 p, float t, float bruit) {
-    return evaluate_terrain_bruit((p.x) / 20 + 0.5f, (p.y) / 20 + 0.5f, t, bruit);
+    return evaluate_terrain_bruit((p.x) / map_size + 0.5f, (p.y) / map_size + 0.5f, t, bruit);
 }
 vec3 evaluate_normal(vec3 p, float t, float bruit) {
     float dx = 0.01f;
