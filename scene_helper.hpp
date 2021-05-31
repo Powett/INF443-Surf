@@ -21,7 +21,9 @@ struct gui_parameters {
 	bool display_wireframe = false;
 	bool display_frame = false;
 	bool fixed_camera = false;
+	bool fixed_camera_2 = false;
 	bool display_keyposition = true;
+	bool disco_mode = false;
 };
 
 struct user_interaction_parameters {

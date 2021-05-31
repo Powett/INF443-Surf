@@ -51,6 +51,9 @@ float gScale = 0.3f;
 float bodyHeight = 1.0f * gScale;
 float bodyWidth = 0.5f * gScale;
 
+shading_parameters_phong* skin = new shading_parameters_phong();
+shading_parameters_phong* swimsuit = new shading_parameters_phong();
+
 float feetSpread;
 float thighLength;
 float effectifeThighLength;
@@ -65,6 +68,8 @@ float physics_bruit = 0.0f;
 float x, y, z;
 
 float deltaT;
+int updateMap;
+float t;
 
 
 int main(int, char* argv[])
@@ -140,7 +145,8 @@ void initialize_data()
 	// Definition of the initial data
 	//--------------------------------------//
 	// Key positions
-	key_positions = { {0,10,10}, {5,10,10},{10,10,10},{10,1,10},{2,0,10}, {-5,-10,10}, {0,10,10}, {5,10,10} };
+	//key_positions = { {0,6,6}, {3,6,6},{6,6,6},{6,1,6},{1,-2,6}, {-2,-6,6}, {0,6,6}, {2,6,6} };
+	key_positions = { {2,6,6} ,{0,6,6}, {-2,-6,6}, {3,6,6},{6,6,6},{6,1,6},{2,6,6},  {0,6,6} };
 	// Key times
 	key_times = { 0.0f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f,4.0f, 10.1f };
 	float key_times_max = key_times[key_times.size() - 1];
@@ -176,13 +182,13 @@ void initialize_data()
 	thighLength = 0.6f * bodyHeight;
 	averageLegLength = thighLength * 3.0f / 2.0f;
 
-	shading_parameters_phong* skin = new shading_parameters_phong();
+	
 	skin->color = { 68.0f / 100.0f,59.0f / 100.0f,49.0f / 100.0f };
 	skin->phong.specular = 0.05f;
 	
-	shading_parameters_phong* swimsuit = new shading_parameters_phong();
+	
 	swimsuit->color = { 10.0f / 100.0f,10.0f / 100.0f,70.0f / 100.0f };
-	swimsuit->phong.specular = 0.8f;
+	swimsuit->phong.specular = 0.5f;
 
 	voile = mesh_drawable(create_kite(gScale / 2));
 	voile.transform.rotate = rotation({ 0,1,0 }, pi / 4);
@@ -295,8 +301,8 @@ void initialize_data()
 	terrain.shading.phong.ambient = 0.8f;
 	vagues.shading.alpha = 0.8f;
 	vagues.shading.color = { 0,0,1.0f };
-	rp = new struct rope(2, 10.0f, 15.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f) - vec3(0,0,8.0f) );
-	display_rope = new struct rope(15, 10.0f, 15.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f) - vec3(0, 0, 8.0f));
+	rp = new struct rope(2, 20.0f, 5.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f)  );
+	display_rope = new struct rope(15, 20.0f, 5.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f) );
 }
 
 
@@ -313,13 +319,14 @@ void display_frame()
 
 
 	timer.update();
-	float const t = timer.t;
+	
 	//recalculate the waves position starting with the second frame
-	recalcterrain++;
-	if (recalcterrain > 1) {
+	updateMap++;
+	if (dt >0 && updateMap>-1) {
+		t= timer.t;
 		terrain.update_position(update_terrain(waveH, t, terrain_bruit));
 		vagues.update_position(update_terrain(waveH, t, vagues_bruit));
-		recalcterrain = 0;
+		updateMap=0;
 	}
 
 
@@ -331,21 +338,21 @@ void display_frame()
 
 	//physics update
 	update_rope(rp, t, false);
-	update_display_rope(display_rope, rp->points[0]->p, rp->points[1]->p);
+	update_display_rope(display_rope, voile_p, rp->points[rp->N - 1]->p + toHand);
 	rp->points[0]->p = voile_p;
 	rp->points[0]->v = voile_dp / dt;
+	
 	rp->n_positions[0] = voile_p;
 	rp->n_speeds[0] = voile_dp / dt;
 	
+	
 	//set the kite position and orientation
 	voile.transform.translate = voile_p;
-	voile.transform.rotate = rotation({ 0,0,1 }, std::atan2(voile_dp.y, voile_dp.x)) * rotation({ 0,1,0 }, (pi / 50) * norm(voile_dp / dt));
+	voile.transform.rotate = rotation({ 0,0,1 }, std::atan2(voile_dp.y, voile_dp.x)) * rotation({ 0,1,0 }, atan(norm(voile_dp / dt)/50));
 
 	toHand = (hierarchy["RHand"].global_transform.translate+ hierarchy["LHand"].global_transform.translate)/2 - rp->n_positions[rp->N -1];
 
-	rp->n_positions[rp->N - 1] += toHand;
 	rope_drawable = curve_drawable(display_rope->n_positions);
-	rp->n_positions[rp->N - 1] -= toHand;
 
 	vec3 surfeur_p = rp->n_positions[rp->N - 1];
 	vec3 surfeur_dp = rp->n_speeds[rp->N - 1] * dt;
@@ -386,7 +393,10 @@ void display_frame()
 
 	
 	if (user.gui.fixed_camera) {
-		scene.camera.look_at((2 * voile_p - 1 * surfeur_p) + vec3(0, 0, 3), surfeur_p, { 0,0,1 });
+		scene.camera.look_at(surfeur_p + hierarchy["RFoot"].global_transform.translate + vec3(0, 0, 3), surfeur_p, { 0,0,1 });
+	}
+	if (user.gui.fixed_camera_2) {
+		scene.camera.look_at(vec3(0, 0, 3), surfeur_p, { 0,0,1 });
 	}
 
 
@@ -395,17 +405,28 @@ void display_frame()
 	draw(rope_drawable, scene);
 	draw(hierarchy, scene);
 
-	for (vec3 x : display_rope->n_positions) {
-		test_sphere.transform.translate = x;
-		draw(test_sphere, scene);
-	}
-	
 	if (user.gui.display_keyposition) {
 		display_keypositions(sphere_keyframe, key_positions, scene);
-		for (vec3 x : rp->n_positions) {
+		for (vec3 x : display_rope->n_positions) {
 			test_sphere.transform.translate = x;
 			draw(test_sphere, scene);
 		}
+	}
+	if (user.gui.disco_mode) {
+		voile.shading.color = { 1.0f*rand()/RAND_MAX, 1.0f*rand() / RAND_MAX,1.0f*rand() / RAND_MAX };
+		hierarchy["Body"].element.shading.color = { 1.0f * rand() / RAND_MAX, 1.0f * rand() / RAND_MAX,1.0f * rand() / RAND_MAX };
+		hierarchy["RArm"].element.shading.color = { 1.0f * rand() / RAND_MAX, 1.0f * rand() / RAND_MAX,1.0f * rand() / RAND_MAX };
+		hierarchy["LArm"].element.shading.color = { 1.0f * rand() / RAND_MAX, 1.0f * rand() / RAND_MAX,1.0f * rand() / RAND_MAX };
+		hierarchy["RThigh"].element.shading.color = { 1.0f * rand() / RAND_MAX, 1.0f * rand() / RAND_MAX,1.0f * rand() / RAND_MAX };
+		hierarchy["LThigh"].element.shading.color = { 1.0f * rand() / RAND_MAX, 1.0f * rand() / RAND_MAX,1.0f * rand() / RAND_MAX };
+		hierarchy["Board"].element.shading.color = { 1.0f * rand() / RAND_MAX, 1.0f * rand() / RAND_MAX,1.0f * rand() / RAND_MAX };
+		terrain.shading.color = { 1.0f * rand() / RAND_MAX, 1.0f * rand() / RAND_MAX,1.0f * rand() / RAND_MAX };
+		vagues.shading.color = { 1.0f * rand() / RAND_MAX, 1.0f * rand() / RAND_MAX,1.0f * rand() / RAND_MAX };
+		hierarchy["Head"].transform.rotate = rotation({ sqrt(2),sqrt(2),0 }, sin(30.0f*t*timer.scale))*rotation({ 0,0,1 }, 30 * pi * t*timer.scale);
+		hierarchy["LElbow"].transform.rotate *= rotation({ 0,1,0 }, 5.0f*timer.scale);
+		hierarchy["LShoulder"].transform.rotate *= rotation({ 0,1,0 }, 3.0f*timer.scale);
+		hierarchy["RElbow"].transform.rotate *= rotation({ 0,1,0 }, 7.0f*timer.scale);
+		hierarchy["RShoulder"].transform.rotate *= rotation({ 0,1,0 }, 2.0f*timer.scale);
 	}
 
 	if (user.gui.display_surface) {
@@ -426,9 +447,11 @@ void display_interface()
 	ImGui::SliderFloat("Waves Height", &waveH, 0.0f, 2.0f);
 	ImGui::Checkbox("Frame", &user.gui.display_frame);
 	ImGui::Checkbox("Display key positions", &user.gui.display_keyposition);
-	ImGui::Checkbox("Fixed camera", &user.gui.fixed_camera);
+	ImGui::Checkbox("Fixed camera to surfer", &user.gui.fixed_camera);
+	ImGui::Checkbox("Fixed camera to center", &user.gui.fixed_camera_2);
 	ImGui::Checkbox("Surface", &user.gui.display_surface);
 	ImGui::Checkbox("Wireframe", &user.gui.display_wireframe);
+	ImGui::Checkbox("Secret, do not touch !", &user.gui.disco_mode);
 }
 
 
