@@ -23,7 +23,7 @@ vec3 uvToVec(float u, float v) {
 // Evaluate 3D position of the terrain for any (u,v) \in [0,1]
 vec3 evaluate_terrain_bruit(float u, float v, float t, float bruit)
 {
-    //Sum of h*exp(-d/d0)*cos(2*pi*(d/d1-freq*t))
+    //Sum of h*exp(-d/d0)*cos(2*pi*(d/d1-freq*t)), freq=vit / d1
 
     float const x = uvToVec(u, v).x;
     float const y = uvToVec(u, v).y;

@@ -22,7 +22,7 @@ struct gui_parameters {
 	bool display_frame = false;
 	bool fixed_camera = false;
 	bool fixed_camera_2 = false;
-	bool display_keyposition = true;
+	bool display_keyposition = false;
 	bool disco_mode = false;
 };
 

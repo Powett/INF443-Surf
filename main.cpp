@@ -148,10 +148,10 @@ void initialize_data()
 	//key_positions = { {0,6,6}, {3,6,6},{6,6,6},{6,1,6},{1,-2,6}, {-2,-6,6}, {0,6,6}, {2,6,6} };
 	key_positions = { {2,6,6} ,{0,6,6}, {-2,-6,6}, {3,6,6},{6,6,6},{6,1,6},{2,6,6},  {0,6,6} };
 	// Key times
-	key_times = { 0.0f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f,4.0f, 10.1f };
+	key_times = { 0.0f, 12.0f, 12.0f, 12.0f, 12.0f, 12.0f,12.0f, 12.0f+12.0f-11.449f };
 	float key_times_max = key_times[key_times.size() - 1];
 
-	for (int i = 0; i < key_positions.size(); i++) {
+	for (int i = 0; i < key_positions.size()-1; i++) {
 		totalLength += norm(key_positions[(i + 1) % key_positions.size()] - key_positions[i]);
 	}
 	for (int i = 1; i < key_positions.size(); i++) {

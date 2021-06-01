@@ -53,7 +53,7 @@ void update_rope(struct rope* rp, float t, bool free) {
 			rp->n_speeds[i] = ((it->v) + dt * f / m);
 			rp->n_positions[i] = it->p + dt * it->v;
 			float hauteur = evaluate_terrain_bruit(it->p, t, 0.0f).z;
-			//The las particle of the rope is the surfer, he doesn't sink into the water. We update his position and speed accordingly
+			//The last particle of the rope is the surfer, he doesn't sink into the water. We update his position and speed accordingly
 			if ( (i == particules.size() - 1) && (rp->n_positions[i].z - offset - hauteur < 0) ) {
 				rp->n_speeds[i].z += (offset + hauteur - rp->n_positions[i].z)/dt;
 				rp->n_positions[i].z = offset + hauteur;
