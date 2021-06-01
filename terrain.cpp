@@ -5,12 +5,12 @@
 
 using namespace vcl;
 
-float waveHeight = 1.0f; // coefficient multiplicatif global
+float waveHeight = 1.0f; // Global multiplicative factor
 std::vector<vec2> p = { {-30.f,-30.f},{-10.0f,-30.f}, {10.f,-30.f},{30.f,-30.f} };
-std::vector<float> h = { 2.f, 4.f, 5.0f, 2.f }; // Amplitude à l'origine
-std::vector<float> d0 = { 25.0f, 25.0f, 25.0f, 25.0f }; // Pseudo-période spatiale
-std::vector<float> d1 = { 15.f, 15.f, 15.f, 15.f }; // Longueur caractéristique d'atténuation
-float vit = 5.0f; // vitesse de phase
+std::vector<float> h = { 2.f, 4.f, 5.0f, 2.f }; // Height at origin
+std::vector<float> d0 = { 25.0f, 25.0f, 25.0f, 25.0f }; // Spatial pseudo-period
+std::vector<float> d1 = { 15.f, 15.f, 15.f, 15.f }; // Caracteristic damping length
+float vit = 5.0f; // Wave speed
 float map_size = 30.0f;
 
 const unsigned int N = 200;

@@ -18,7 +18,7 @@ buffer<float> key_times;
 float totalLength = 0;
 timer_interval timer;
 
-int recalcterrain = 0;
+int recalcterrain = 0; // Allows to refresh terrain only once every X frame
 
 
 void mouse_move_callback(GLFWwindow* window, double xpos, double ypos);
@@ -29,11 +29,12 @@ void initialize_data();
 void display_interface();
 void display_frame();
 
+/**************Drawables**************/
 
 mesh_drawable sphere_current;    // sphere used to display the interpolated value
 mesh_drawable sphere_keyframe;   // sphere used to display the key positions
 curve_drawable polygon_keyframe; // Display the segment between key positions
-curve_drawable rope_drawable;
+curve_drawable rope_drawable; // Display rope
 
 mesh_drawable voile;
 
@@ -42,10 +43,9 @@ mesh_drawable terrain;
 mesh_drawable vagues;
 mesh_drawable test_sphere;
 struct rope* rp;
-struct rope* display_rope;
-struct particle_structure* surfeur;
+struct rope* display_rope; // Used only for display
 
-float bigRadius = 10.0f;
+/**************Various consts**************/
 
 float gScale = 0.3f;
 float bodyHeight = 1.0f * gScale;
@@ -140,15 +140,14 @@ void initialize_data()
 	user.global_frame = mesh_drawable(mesh_primitive_frame());
 	user.gui.display_frame = false;
 	scene.camera.distance_to_center = 2.5f;
-	scene.camera.look_at({ -0.5f,10.0f,1 }, { 0,0,0 }, { 0,0,1 });
+	scene.camera.look_at({ 20,20,10 }, { 0,0,0 }, { 0,0,1 });
 
 	// Definition of the initial data
 	//--------------------------------------//
 	// Key positions
-	//key_positions = { {0,6,6}, {3,6,6},{6,6,6},{6,1,6},{1,-2,6}, {-2,-6,6}, {0,6,6}, {2,6,6} };
 	key_positions = { {2,6,6} ,{0,6,6}, {-2,-6,6}, {3,6,6},{6,6,6},{6,1,6},{2,6,6},  {0,6,6} };
 	// Key times
-	key_times = { 0.0f, 12.0f, 12.0f, 12.0f, 12.0f, 12.0f,12.0f, 12.0f+12.0f-11.449f };
+	key_times = { 0.0f, 12.0f, 12.0f, 12.0f, 12.0f, 12.0f,12.0f, 18.0f+18.0f-11.449f };
 	float key_times_max = key_times[key_times.size() - 1];
 
 	for (int i = 0; i < key_positions.size()-1; i++) {
@@ -240,6 +239,8 @@ void initialize_data()
 		GL_REPEAT,
 		GL_MIRRORED_REPEAT);
 
+	/**************Build hierarchy**************/
+
 	hierarchy.add(body, "Body");
 	hierarchy.add(head, "Head", "Body", { 0,0,1.4f * bodyHeight });
 
@@ -290,6 +291,7 @@ void initialize_data()
 	feetSpread = std::abs((hierarchy["RFoot"].global_transform.translate - hierarchy["LFoot"].global_transform.translate).x);
 	effectifeThighLength = (hierarchy["LHip"].global_transform.translate - hierarchy["LKnee"].global_transform.translate).z / 2;
 	
+	/**************Build terrain**************/
 
 	terrain = mesh_drawable(create_terrain_bruit(0, terrain_bruit));
 	terrain.shading.phong.specular = 0.2f;
@@ -303,21 +305,14 @@ void initialize_data()
 	vagues.shading.color = { 0,0,1.0f };
 	rp = new struct rope(2, 20.0f, 5.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f)  );
 	display_rope = new struct rope(15, 20.0f, 5.0f, 0.1f, key_positions[0], evaluate_terrain_bruit(key_positions[key_positions.size() - 2], 0.0f, 0.0f) );
+
+	polygon_keyframe = curve_drawable(key_positions);
 }
 
 
 
 void display_frame()
 {
-
-
-	// Sanity check
-	assert_vcl(key_times.size() == key_positions.size(), "key_time and key_positions should have the same size");
-
-
-
-
-
 	timer.update();
 	
 	//recalculate the waves position starting with the second frame
@@ -393,7 +388,7 @@ void display_frame()
 
 	
 	if (user.gui.fixed_camera) {
-		scene.camera.look_at(surfeur_p + hierarchy["RFoot"].global_transform.translate + vec3(0, 0, 3), surfeur_p, { 0,0,1 });
+		scene.camera.look_at(evaluate_terrain_bruit(surfeur_p + hierarchy["RFoot"].global_transform.translate, t, 0.0f) + vec3(0,0,5), surfeur_p, { 0,0,1 });
 	}
 	if (user.gui.fixed_camera_2) {
 		scene.camera.look_at(vec3(0, 0, 3), surfeur_p, { 0,0,1 });
@@ -410,9 +405,11 @@ void display_frame()
 		for (vec3 x : display_rope->n_positions) {
 			test_sphere.transform.translate = x;
 			draw(test_sphere, scene);
+			draw(polygon_keyframe, scene);
 		}
 	}
 	if (user.gui.disco_mode) {
+		// Vibe !
 		voile.shading.color = { 1.0f*rand()/RAND_MAX, 1.0f*rand() / RAND_MAX,1.0f*rand() / RAND_MAX };
 		hierarchy["Body"].element.shading.color = { 1.0f * rand() / RAND_MAX, 1.0f * rand() / RAND_MAX,1.0f * rand() / RAND_MAX };
 		hierarchy["RArm"].element.shading.color = { 1.0f * rand() / RAND_MAX, 1.0f * rand() / RAND_MAX,1.0f * rand() / RAND_MAX };

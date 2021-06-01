@@ -5,7 +5,7 @@
 using namespace vcl;
 
 mesh create_surfboard(float length, float width, float height) {
-
+    // Plots a surfboard with given dimensions
     mesh surfboard;
     surfboard.position.resize(26);
 
@@ -94,6 +94,8 @@ mesh create_surfboard(float length, float width, float height) {
 
 
 mesh create_kite(float size) {
+    // Plot kite sail using given size
+
     mesh cyl = mesh_primitive_cylinder(size, vec3(0, 0, 25.45f*size), vec3(size * 10, 0, 25.45f * size), 100, 100, false);
     for (int i = 1; i < 11; i++) {
         cyl.push_back(mesh_primitive_cylinder(size, vec3(0, 25.45f * size * std::sin(i * 2 * 3.14f / 80), 25.45f * size * std::cos(i * 2 * 3.14f / 80)), vec3(10 * size * std::cos(i * 3 * 3.14f / 80), 25.45f * size * std::sin(i * 2 * 3.14f / 80), 25.45f * size * std::cos(i * 2 * 3.14f / 80)), 100, 100, false));
